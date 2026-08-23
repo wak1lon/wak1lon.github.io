@@ -13,9 +13,12 @@ export type SiteSettings = {
   whatsapp: string;
   instagram: string;
   youtube: string;
+  faviconData: string;
   logoData: string;
   heroImageData: string;
   aboutImageData: string;
+  gtmCode: string;
+  metaPixelCode: string;
   basicPrice: string;
   essentialPrice: string;
   completePrice: string;
@@ -33,9 +36,12 @@ export const defaultSettings: SiteSettings = {
   whatsapp: "",
   instagram: "https://instagram.com/wakilongestor",
   youtube: "https://youtube.com/@wakilongestor",
+  faviconData: "",
   logoData: "",
   heroImageData: "",
   aboutImageData: "",
+  gtmCode: "",
+  metaPixelCode: "",
   basicPrice: "R$ 800",
   essentialPrice: "R$ 1.200",
   completePrice: "R$ 1.500",
@@ -197,11 +203,11 @@ export default function SiteClient() {
           <span />
         </button>
         <nav className={menuOpen ? "nav-links nav-open" : "nav-links"} aria-label="Navegação principal">
-          <a href="#processo" onClick={() => setMenuOpen(false)}>Processo</a>
-          <a href="#servicos" onClick={() => setMenuOpen(false)}>Serviços</a>
-          <a href="#planos" onClick={() => setMenuOpen(false)}>Planos</a>
-          <a href="#sobre" onClick={() => setMenuOpen(false)}>Sobre</a>
-          <a className="nav-cta" href={contact} target="_blank" rel="noreferrer">Falar com Wakilon</a>
+          <a href="#processo" data-track-event="navigation_click" data-track-label="Processo" onClick={() => setMenuOpen(false)}>Processo</a>
+          <a href="#servicos" data-track-event="navigation_click" data-track-label="Serviços" onClick={() => setMenuOpen(false)}>Serviços</a>
+          <a href="#planos" data-track-event="navigation_click" data-track-label="Planos" onClick={() => setMenuOpen(false)}>Planos</a>
+          <a href="#sobre" data-track-event="navigation_click" data-track-label="Sobre" onClick={() => setMenuOpen(false)}>Sobre</a>
+          <a className="nav-cta" href={contact} target="_blank" rel="noreferrer" data-track-event="generate_lead" data-track-label="Cabeçalho">Falar com Wakilon</a>
         </nav>
       </header>
 
@@ -213,10 +219,10 @@ export default function SiteClient() {
               <h1>{settings.heroTitle}</h1>
               <p>{settings.heroSubtitle}</p>
               <div className="hero-actions">
-                <a className="button button-primary" href={contact} target="_blank" rel="noreferrer">
+                <a className="button button-primary" href={contact} target="_blank" rel="noreferrer" data-track-event="generate_lead" data-track-label="Hero principal">
                   Quero crescer com direção <ArrowIcon />
                 </a>
-                <a className="text-link" href="#processo">Ver como funciona <span>↓</span></a>
+                <a className="text-link" href="#processo" data-track-event="navigation_click" data-track-label="Ver processo">Ver como funciona <span>↓</span></a>
               </div>
               <div className="trust-row" aria-label="Principais diferenciais">
                 <span><i>✓</i> Estratégia personalizada</span>
@@ -282,6 +288,9 @@ export default function SiteClient() {
                     role="tab"
                     aria-selected={activeStep === index}
                     className={activeStep === index ? "funnel-tab active" : "funnel-tab"}
+                    data-track-event="select_content"
+                    data-track-label={`Funil: ${step.title}`}
+                    data-track-step={step.number}
                     onClick={() => setActiveStep(index)}
                   >
                     <span>{step.number}</span>
@@ -368,7 +377,7 @@ export default function SiteClient() {
                 <ul>
                   <li>Meta Ads</li><li>Google Ads</li><li>Funil de qualificação</li><li>Relatório periódico</li>
                 </ul>
-                <a href={contact} target="_blank" rel="noreferrer" className="button button-outline">Quero o Básico <ArrowIcon /></a>
+                <a href={contact} target="_blank" rel="noreferrer" className="button button-outline" data-track-event="generate_lead" data-track-label="Plano Básico" data-track-plan="Básico">Quero o Básico <ArrowIcon /></a>
               </article>
               <article className="price-card featured-price">
                 <div className="recommended">MAIS ESCOLHIDO</div>
@@ -378,7 +387,7 @@ export default function SiteClient() {
                 <ul>
                   <li>Meta Ads + Google Ads</li><li>Landing page profissional</li><li>Funil de qualificação</li><li>Rastreamento de conversões</li><li>Apoio no processo de vendas</li><li>Relatório periódico</li>
                 </ul>
-                <a href={contact} target="_blank" rel="noreferrer" className="button button-primary">Quero o Essencial <ArrowIcon /></a>
+                <a href={contact} target="_blank" rel="noreferrer" className="button button-primary" data-track-event="generate_lead" data-track-label="Plano Essencial" data-track-plan="Essencial">Quero o Essencial <ArrowIcon /></a>
               </article>
               <article className="price-card">
                 <div className="price-head"><span>COMPLETO</span><small>Mais canais</small></div>
@@ -387,7 +396,7 @@ export default function SiteClient() {
                 <ul>
                   <li>Tudo do Essencial</li><li>TikTok Ads</li><li>Direcionamento comercial</li><li>Google Meu Negócio</li><li>Orientação de CRM</li><li>Relatório periódico</li>
                 </ul>
-                <a href={contact} target="_blank" rel="noreferrer" className="button button-outline">Quero o Completo <ArrowIcon /></a>
+                <a href={contact} target="_blank" rel="noreferrer" className="button button-outline" data-track-event="generate_lead" data-track-label="Plano Completo" data-track-plan="Completo">Quero o Completo <ArrowIcon /></a>
               </article>
             </div>
 
@@ -420,7 +429,7 @@ export default function SiteClient() {
               <p>Eu ajudo advogados, especialmente previdenciaristas, a organizar sua presença digital e o processo de aquisição com estratégia, tecnologia e acompanhamento próximo.</p>
               <p>O trabalho vai além de colocar campanhas no ar: conecto tráfego, páginas, qualificação, rastreamento e processo comercial para você investir com mais clareza.</p>
               <div className="about-values"><span><b>Direção</b><small>Antes de investir</small></span><span><b>Transparência</b><small>Na leitura dos dados</small></span><span><b>Evolução</b><small>Com melhoria contínua</small></span></div>
-              <a href={contact} target="_blank" rel="noreferrer" className="text-link strong-link">Vamos conversar <ArrowIcon /></a>
+              <a href={contact} target="_blank" rel="noreferrer" className="text-link strong-link" data-track-event="generate_lead" data-track-label="Bloco sobre">Vamos conversar <ArrowIcon /></a>
             </div>
           </div>
         </section>
@@ -440,7 +449,7 @@ export default function SiteClient() {
         <section id="contato" className="cta-section">
           <div className="container cta-inner">
             <div><span className="section-kicker">PRÓXIMO PASSO</span><h2>Quer construir uma aquisição mais clara para o seu escritório?</h2><p>Conte seu momento. A conversa inicial serve para entender o cenário e indicar a estrutura que realmente faz sentido.</p></div>
-            <a className="button button-light" href={contact} target="_blank" rel="noreferrer">QUERO CONVERSAR <ArrowIcon /></a>
+            <a className="button button-light" href={contact} target="_blank" rel="noreferrer" data-track-event="generate_lead" data-track-label="CTA final">QUERO CONVERSAR <ArrowIcon /></a>
           </div>
         </section>
       </main>
@@ -449,7 +458,7 @@ export default function SiteClient() {
         <div className="container footer-grid">
           <div className="footer-brand"><Brand settings={settings} /><p>Marketing, tráfego e processos de aquisição para advogados que querem crescer com direção.</p></div>
           <div><span className="footer-title">NAVEGAÇÃO</span><a href="#processo">Processo</a><a href="#servicos">Serviços</a><a href="#planos">Planos</a><a href="#sobre">Sobre</a></div>
-          <div><span className="footer-title">CANAIS</span><a href={`mailto:${settings.email}`}>{settings.email}</a><a href={settings.instagram} target="_blank" rel="noreferrer">Instagram</a><a href={settings.youtube} target="_blank" rel="noreferrer">YouTube</a></div>
+          <div><span className="footer-title">CANAIS</span><a href={`mailto:${settings.email}`} data-track-event="generate_lead" data-track-label="E-mail do rodapé">{settings.email}</a><a href={settings.instagram} target="_blank" rel="noreferrer" data-track-event="outbound_click" data-track-label="Instagram">Instagram</a><a href={settings.youtube} target="_blank" rel="noreferrer" data-track-event="outbound_click" data-track-label="YouTube">YouTube</a></div>
           <div><span className="footer-title">INFORMAÇÕES</span><a href="/privacidade">Política de Privacidade</a><a href="/termos">Termos de Uso</a><a href="/painel" className="admin-link">Painel de edição</a></div>
         </div>
         <div className="container footer-bottom"><span>© 2026 {settings.brandName}. Todos os direitos reservados.</span><span>Desenvolvido com estratégia e propósito.</span></div>

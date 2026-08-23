@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import TrackingRuntime from "./tracking-runtime";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -37,7 +38,25 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <head>
+        <meta name="codex-preview" content="development" />
+        {/* Google tag (gtag.js) — GA4 principal do site */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-L8HFJW94KT" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-L8HFJW94KT');
+            `,
+          }}
+        />
+      </head>
+      <body>
+        <TrackingRuntime />
+        {children}
+      </body>
     </html>
   );
 }

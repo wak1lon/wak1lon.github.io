@@ -3,7 +3,7 @@
 import { ChangeEvent, useEffect, useState } from "react";
 import { Brand, defaultSettings, SETTINGS_KEY, SiteSettings } from "../site-client";
 
-type AssetKey = "logoData" | "heroImageData" | "aboutImageData";
+type AssetKey = "faviconData" | "logoData" | "heroImageData" | "aboutImageData";
 
 function resizeImage(file: File, maxWidth: number, maxHeight: number, quality = 0.82) {
   return new Promise<string>((resolve, reject) => {
@@ -56,6 +56,7 @@ export default function AdminPage() {
   function save() {
     try {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+      window.dispatchEvent(new CustomEvent("wakilon:settings-updated"));
       setStatus("Tudo salvo. Abra a página principal para conferir.");
     } catch {
       setStatus("Não foi possível salvar. Reduza o tamanho das imagens e tente novamente.");
@@ -65,6 +66,7 @@ export default function AdminPage() {
   function restore() {
     setSettings(defaultSettings);
     localStorage.removeItem(SETTINGS_KEY);
+    window.dispatchEvent(new CustomEvent("wakilon:settings-updated"));
     setStatus("Configurações originais restauradas.");
   }
 
@@ -77,7 +79,12 @@ export default function AdminPage() {
     }
     setBusyAsset(key);
     try {
-      const data = await resizeImage(file, key === "logoData" ? 700 : 1600, key === "logoData" ? 400 : 1100, key === "logoData" ? 0.9 : 0.8);
+      const dimensions = key === "faviconData"
+        ? { width: 256, height: 256, quality: 0.92 }
+        : key === "logoData"
+          ? { width: 700, height: 400, quality: 0.9 }
+          : { width: 1600, height: 1100, quality: 0.8 };
+      const data = await resizeImage(file, dimensions.width, dimensions.height, dimensions.quality);
       update(key, data);
       setStatus("Imagem pronta. Clique em Salvar alterações.");
     } catch (error) {
@@ -130,22 +137,24 @@ export default function AdminPage() {
         <aside className="admin-sidebar">
           <span className="section-kicker">PAINEL DE EDIÇÃO</span>
           <h1>Personalize sem alterar o código.</h1>
-          <p>Troque identidade, imagens, contatos e valores. As mudanças ficam salvas neste navegador.</p>
+          <p>Troque identidade, imagens, contatos, valores e códigos de rastreamento. As mudanças ficam salvas neste navegador.</p>
           <nav>
             <a href="#identidade">01. Identidade</a>
             <a href="#mensagem">02. Mensagem principal</a>
             <a href="#contatos">03. Contatos</a>
             <a href="#planos-editor">04. Valores</a>
-            <a href="#backup">05. Backup</a>
+            <a href="#integracoes">05. Integrações</a>
+            <a href="#backup">06. Backup</a>
           </nav>
           <div className="admin-notice"><i />{status}</div>
         </aside>
 
         <div className="admin-content">
           <section id="identidade" className="admin-card">
-            <div className="admin-card-head"><span>01</span><div><h2>Identidade e imagens</h2><p>Logo, fundo principal e imagem do bloco sobre.</p></div></div>
+            <div className="admin-card-head"><span>01</span><div><h2>Identidade e imagens</h2><p>Favicon, logo, fundo principal e imagem do bloco sobre.</p></div></div>
             <label className="field-label">Nome da marca<input value={settings.brandName} onChange={(event) => update("brandName", event.target.value)} /></label>
             <div className="asset-grid">
+              <AssetUpload title="Favicon" hint="Ícone quadrado, preferencialmente PNG" value={settings.faviconData} busy={busyAsset === "faviconData"} onChange={(event) => handleAsset(event, "faviconData")} onRemove={() => update("faviconData", "")} />
               <AssetUpload title="Logomarca" hint="PNG ou WebP transparente" value={settings.logoData} busy={busyAsset === "logoData"} onChange={(event) => handleAsset(event, "logoData")} onRemove={() => update("logoData", "")} />
               <AssetUpload title="Fundo da abertura" hint="Imagem horizontal" value={settings.heroImageData} busy={busyAsset === "heroImageData"} onChange={(event) => handleAsset(event, "heroImageData")} onRemove={() => update("heroImageData", "")} />
               <AssetUpload title="Foto do bloco sobre" hint="Retrato ou foto profissional" value={settings.aboutImageData} busy={busyAsset === "aboutImageData"} onChange={(event) => handleAsset(event, "aboutImageData")} onRemove={() => update("aboutImageData", "")} />
@@ -178,8 +187,46 @@ export default function AdminPage() {
             </div>
           </section>
 
+          <section id="integracoes" className="admin-card">
+            <div className="admin-card-head"><span>05</span><div><h2>Integrações e rastreamento</h2><p>Cole os códigos completos fornecidos pelas plataformas.</p></div></div>
+            <div className="integration-status">
+              <div><span>GA4 ATIVO</span><b>G-L8HFJW94KT</b></div>
+              <p>O GA4 principal está fixo no código do site. Não cole novamente o mesmo Google tag no GTM para evitar eventos duplicados.</p>
+            </div>
+            <label className="field-label code-field">
+              Código completo do Google Tag Manager
+              <textarea
+                value={settings.gtmCode}
+                onChange={(event) => update("gtmCode", event.target.value)}
+                rows={9}
+                spellCheck={false}
+                placeholder={'<!-- Google Tag Manager -->\n<script>...</script>\n<!-- End Google Tag Manager -->'}
+              />
+              <small>Cole o bloco inteiro do GTM, incluindo a parte &lt;script&gt; e, se houver, &lt;noscript&gt;.</small>
+            </label>
+            <label className="field-label code-field">
+              Código completo do Meta Pixel (Facebook)
+              <textarea
+                value={settings.metaPixelCode}
+                onChange={(event) => update("metaPixelCode", event.target.value)}
+                rows={11}
+                spellCheck={false}
+                placeholder={'<!-- Meta Pixel Code -->\n<script>...</script>\n<noscript>...</noscript>'}
+              />
+              <small>Cole o snippet oficial completo, não apenas o número do Pixel.</small>
+            </label>
+            <div className="code-warning"><b>Segurança</b><span>Esses campos executam JavaScript nas páginas públicas. Use somente códigos oficiais copiados do GTM e do Gerenciador de Eventos da Meta.</span></div>
+            <div className="event-map">
+              <b>Eventos já conectados</b>
+              <span><i>generate_lead</i> botões de contato e planos</span>
+              <span><i>select_content</i> etapas do funil</span>
+              <span><i>navigation_click</i> navegação interna</span>
+              <span><i>outbound_click</i> Instagram e YouTube</span>
+            </div>
+          </section>
+
           <section id="backup" className="admin-card">
-            <div className="admin-card-head"><span>05</span><div><h2>Backup e restauração</h2><p>Leve suas configurações para outro navegador ou restaure o conteúdo original.</p></div></div>
+            <div className="admin-card-head"><span>06</span><div><h2>Backup e restauração</h2><p>Leve suas configurações para outro navegador ou restaure o conteúdo original.</p></div></div>
             <div className="backup-actions">
               <button type="button" className="button button-outline" onClick={exportSettings}>Exportar backup</button>
               <label className="button button-outline file-button">Importar backup<input type="file" accept="application/json" onChange={importSettings} /></label>
@@ -204,7 +251,7 @@ function AssetUpload({ title, hint, value, busy, onChange, onRemove }: { title: 
         {!value && <span>SEM IMAGEM</span>}
       </div>
       <div><b>{title}</b><small>{hint}</small></div>
-      <label className="upload-trigger">{busy ? "Processando..." : value ? "Trocar imagem" : "Enviar imagem"}<input type="file" accept="image/png,image/jpeg,image/webp" onChange={onChange} disabled={busy} /></label>
+      <label className="upload-trigger">{busy ? "Processando..." : value ? "Trocar imagem" : "Enviar imagem"}<input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/x-icon" onChange={onChange} disabled={busy} /></label>
       {value && <button type="button" className="remove-asset" onClick={onRemove}>Remover</button>}
     </div>
   );
