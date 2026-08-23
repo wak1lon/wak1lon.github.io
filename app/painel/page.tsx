@@ -3,7 +3,7 @@
 import { ChangeEvent, useEffect, useState } from "react";
 import { Brand, defaultSettings, SETTINGS_KEY, SiteSettings } from "../site-client";
 
-type AssetKey = "faviconData" | "logoData" | "heroImageData" | "aboutImageData";
+type AssetKey = "faviconData" | "logoData" | "heroImageData" | "aboutImageData" | "bannerImageData";
 
 function resizeImage(file: File, maxWidth: number, maxHeight: number, quality = 0.82) {
   return new Promise<string>((resolve, reject) => {
@@ -83,7 +83,9 @@ export default function AdminPage() {
         ? { width: 256, height: 256, quality: 0.92 }
         : key === "logoData"
           ? { width: 700, height: 400, quality: 0.9 }
-          : { width: 1600, height: 1100, quality: 0.8 };
+          : key === "bannerImageData"
+            ? { width: 1800, height: 850, quality: 0.82 }
+            : { width: 1600, height: 1100, quality: 0.8 };
       const data = await resizeImage(file, dimensions.width, dimensions.height, dimensions.quality);
       update(key, data);
       setStatus("Imagem pronta. Clique em Salvar alterações.");
@@ -129,6 +131,7 @@ export default function AdminPage() {
         <Brand settings={settings} />
         <div>
           <a href="/" target="_blank" rel="noreferrer" className="button button-outline">Ver site</a>
+          <a href="/blog/" target="_blank" rel="noreferrer" className="button button-outline">Ver Blog</a>
           <button type="button" className="button button-primary" onClick={save}>Salvar alterações</button>
         </div>
       </header>
@@ -141,10 +144,11 @@ export default function AdminPage() {
           <nav>
             <a href="#identidade">01. Identidade</a>
             <a href="#mensagem">02. Mensagem principal</a>
-            <a href="#contatos">03. Contatos</a>
-            <a href="#planos-editor">04. Valores</a>
-            <a href="#integracoes">05. Integrações</a>
-            <a href="#backup">06. Backup</a>
+            <a href="#banner-editor">03. Banner e aparência</a>
+            <a href="#contatos">04. Contatos</a>
+            <a href="#planos-editor">05. Valores</a>
+            <a href="#integracoes">06. Integrações</a>
+            <a href="#backup">07. Backup</a>
           </nav>
           <div className="admin-notice"><i />{status}</div>
         </aside>
@@ -168,8 +172,39 @@ export default function AdminPage() {
             <label className="field-label">Descrição<textarea value={settings.heroSubtitle} onChange={(event) => update("heroSubtitle", event.target.value)} rows={4} maxLength={240} /></label>
           </section>
 
+          <section id="banner-editor" className="admin-card">
+            <div className="admin-card-head"><span>03</span><div><h2>Banner e aparência dos serviços</h2><p>Controle o destaque da página inicial e o estilo dos contêineres.</p></div></div>
+            <label className="switch-row">
+              <span><b>Exibir banner de destaque</b><small>Desative quando não quiser mostrar este bloco na página inicial.</small></span>
+              <input type="checkbox" checked={settings.bannerEnabled} onChange={(event) => update("bannerEnabled", event.target.checked)} />
+              <i aria-hidden="true" />
+            </label>
+            <div className="banner-editor-grid">
+              <AssetUpload title="Imagem do banner" hint="Horizontal, até 1800 × 850 px" value={settings.bannerImageData} busy={busyAsset === "bannerImageData"} onChange={(event) => handleAsset(event, "bannerImageData")} onRemove={() => update("bannerImageData", "")} />
+              <div>
+                <label className="field-label">Linha superior<input value={settings.bannerEyebrow} onChange={(event) => update("bannerEyebrow", event.target.value)} maxLength={55} /></label>
+                <label className="field-label">Título do banner<textarea value={settings.bannerTitle} onChange={(event) => update("bannerTitle", event.target.value)} rows={3} maxLength={105} /></label>
+                <label className="field-label">Texto de apoio<textarea value={settings.bannerText} onChange={(event) => update("bannerText", event.target.value)} rows={3} maxLength={210} /></label>
+              </div>
+            </div>
+            <div className="form-grid">
+              <label className="field-label">Texto do botão<input value={settings.bannerButtonLabel} onChange={(event) => update("bannerButtonLabel", event.target.value)} maxLength={32} /></label>
+              <label className="field-label">Link do botão<input value={settings.bannerButtonUrl} onChange={(event) => update("bannerButtonUrl", event.target.value)} placeholder="/blog/ ou https://..." /></label>
+            </div>
+            <label className="field-label">
+              Cores dos contêineres de serviços
+              <select value={settings.serviceStyle} onChange={(event) => update("serviceStyle", event.target.value as SiteSettings["serviceStyle"])}>
+                <option value="mixed">Azul, branco e grafite alternados</option>
+                <option value="blue">Todos em azul</option>
+                <option value="light">Todos em branco</option>
+                <option value="graphite">Todos em grafite</option>
+              </select>
+              <small>O modo alternado cria mais profundidade e separação visual entre os serviços.</small>
+            </label>
+          </section>
+
           <section id="contatos" className="admin-card">
-            <div className="admin-card-head"><span>03</span><div><h2>Contato e redes sociais</h2><p>Os botões usam o WhatsApp quando o número estiver preenchido; caso contrário, usam o e-mail.</p></div></div>
+            <div className="admin-card-head"><span>04</span><div><h2>Contato e redes sociais</h2><p>Os botões usam o WhatsApp quando o número estiver preenchido; caso contrário, usam o e-mail.</p></div></div>
             <div className="form-grid">
               <label className="field-label">WhatsApp com DDI<input value={settings.whatsapp} onChange={(event) => update("whatsapp", event.target.value)} placeholder="5568999999999" inputMode="tel" /></label>
               <label className="field-label">E-mail<input value={settings.email} onChange={(event) => update("email", event.target.value)} type="email" /></label>
@@ -179,7 +214,7 @@ export default function AdminPage() {
           </section>
 
           <section id="planos-editor" className="admin-card">
-            <div className="admin-card-head"><span>04</span><div><h2>Valores dos planos</h2><p>Edite o valor exibido; “/mês” já aparece automaticamente.</p></div></div>
+            <div className="admin-card-head"><span>05</span><div><h2>Valores dos planos</h2><p>Edite o valor exibido; “/mês” já aparece automaticamente.</p></div></div>
             <div className="form-grid three-fields">
               <label className="field-label">Plano Básico<input value={settings.basicPrice} onChange={(event) => update("basicPrice", event.target.value)} /></label>
               <label className="field-label">Plano Essencial<input value={settings.essentialPrice} onChange={(event) => update("essentialPrice", event.target.value)} /></label>
@@ -188,7 +223,7 @@ export default function AdminPage() {
           </section>
 
           <section id="integracoes" className="admin-card">
-            <div className="admin-card-head"><span>05</span><div><h2>Integrações e rastreamento</h2><p>Cole os códigos completos fornecidos pelas plataformas.</p></div></div>
+            <div className="admin-card-head"><span>06</span><div><h2>Integrações e rastreamento</h2><p>Cole os códigos completos fornecidos pelas plataformas.</p></div></div>
             <div className="integration-status">
               <div><span>GA4 ATIVO</span><b>G-L8HFJW94KT</b></div>
               <p>O GA4 principal está fixo no código do site. Não cole novamente o mesmo Google tag no GTM para evitar eventos duplicados.</p>
@@ -226,7 +261,7 @@ export default function AdminPage() {
           </section>
 
           <section id="backup" className="admin-card">
-            <div className="admin-card-head"><span>06</span><div><h2>Backup e restauração</h2><p>Leve suas configurações para outro navegador ou restaure o conteúdo original.</p></div></div>
+            <div className="admin-card-head"><span>07</span><div><h2>Backup e restauração</h2><p>Leve suas configurações para outro navegador ou restaure o conteúdo original.</p></div></div>
             <div className="backup-actions">
               <button type="button" className="button button-outline" onClick={exportSettings}>Exportar backup</button>
               <label className="button button-outline file-button">Importar backup<input type="file" accept="application/json" onChange={importSettings} /></label>

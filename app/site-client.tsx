@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 
 export type SiteSettings = {
   brandName: string;
@@ -17,6 +18,14 @@ export type SiteSettings = {
   logoData: string;
   heroImageData: string;
   aboutImageData: string;
+  bannerImageData: string;
+  bannerEnabled: boolean;
+  bannerEyebrow: string;
+  bannerTitle: string;
+  bannerText: string;
+  bannerButtonLabel: string;
+  bannerButtonUrl: string;
+  serviceStyle: "mixed" | "blue" | "light" | "graphite";
   gtmCode: string;
   metaPixelCode: string;
   basicPrice: string;
@@ -40,6 +49,14 @@ export const defaultSettings: SiteSettings = {
   logoData: "",
   heroImageData: "",
   aboutImageData: "",
+  bannerImageData: "",
+  bannerEnabled: true,
+  bannerEyebrow: "CONTEÚDO PARA ESCRITÓRIOS",
+  bannerTitle: "Gestão, marketing e processo comercial em uma visão prática.",
+  bannerText: "Acesse orientações objetivas para organizar a aquisição de clientes, o atendimento e a presença digital do seu escritório.",
+  bannerButtonLabel: "Explorar o Blog",
+  bannerButtonUrl: "/blog/",
+  serviceStyle: "mixed",
   gtmCode: "",
   metaPixelCode: "",
   basicPrice: "R$ 800",
@@ -94,6 +111,7 @@ const services = [
   {
     number: "01",
     stage: "Atração",
+    theme: "blue",
     image: "/services/trafego-pago.png",
     alt: "Representação visual de campanhas de tráfego pago para advogados",
     title: "Tráfego Pago",
@@ -104,6 +122,7 @@ const services = [
   {
     number: "02",
     stage: "Conversão",
+    theme: "light",
     image: "/services/landing-pages.png",
     alt: "Representação visual de landing page focada em conversão",
     title: "Landing Pages",
@@ -114,6 +133,7 @@ const services = [
   {
     number: "03",
     stage: "Qualificação",
+    theme: "graphite",
     image: "/services/funil-qualificacao.png",
     alt: "Representação visual de funil de qualificação de oportunidades",
     title: "Funil de Qualificação",
@@ -124,6 +144,7 @@ const services = [
   {
     number: "04",
     stage: "Medição",
+    theme: "light",
     image: "/services/rastreamento-dados.png",
     alt: "Representação visual de rastreamento de dados e conversões",
     title: "Rastreamento de Dados",
@@ -134,6 +155,7 @@ const services = [
   {
     number: "05",
     stage: "Autoridade",
+    theme: "blue",
     image: "/services/presenca-local.png",
     alt: "Representação visual de presença local e localização no Google",
     title: "Presença Local",
@@ -144,6 +166,7 @@ const services = [
   {
     number: "06",
     stage: "Vendas",
+    theme: "graphite",
     image: "/services/direcao-comercial.png",
     alt: "Representação visual de direção comercial e organização de oportunidades",
     title: "Direção Comercial",
@@ -263,6 +286,24 @@ export default function SiteClient() {
     setSelectedPlanId(planId);
     window.requestAnimationFrame(() => document.getElementById("checkout")?.scrollIntoView({ behavior: "smooth", block: "center" }));
   }
+
+  function moveServiceCard(event: React.PointerEvent<HTMLElement>) {
+    if (event.pointerType === "touch") return;
+    const card = event.currentTarget;
+    const bounds = card.getBoundingClientRect();
+    const x = (event.clientX - bounds.left) / bounds.width - 0.5;
+    const y = (event.clientY - bounds.top) / bounds.height - 0.5;
+    card.style.setProperty("--service-tilt-x", `${(-y * 3.5).toFixed(2)}deg`);
+    card.style.setProperty("--service-tilt-y", `${(x * 4.5).toFixed(2)}deg`);
+    card.style.setProperty("--service-glow-x", `${((x + 0.5) * 100).toFixed(0)}%`);
+    card.style.setProperty("--service-glow-y", `${((y + 0.5) * 100).toFixed(0)}%`);
+  }
+
+  function resetServiceCard(event: React.PointerEvent<HTMLElement>) {
+    const card = event.currentTarget;
+    card.style.setProperty("--service-tilt-x", "0deg");
+    card.style.setProperty("--service-tilt-y", "0deg");
+  }
   const heroStyle = settings.heroImageData
     ? { backgroundImage: `linear-gradient(90deg, rgba(2,9,24,.98) 0%, rgba(2,9,24,.86) 47%, rgba(2,9,24,.24) 100%), url(${settings.heroImageData})` }
     : undefined;
@@ -288,6 +329,7 @@ export default function SiteClient() {
           <a href="#servicos" data-track-event="navigation_click" data-track-label="Serviços" onClick={() => setMenuOpen(false)}>Serviços</a>
           <a href="#planos" data-track-event="navigation_click" data-track-label="Planos" onClick={() => setMenuOpen(false)}>Planos</a>
           <a href="#sobre" data-track-event="navigation_click" data-track-label="Sobre" onClick={() => setMenuOpen(false)}>Sobre</a>
+          <Link href="/blog/" data-track-event="navigation_click" data-track-label="Blog" onClick={() => setMenuOpen(false)}>Blog</Link>
           <a className="nav-cta" href={contact} target="_blank" rel="noreferrer" data-track-event="generate_lead" data-track-label="Cabeçalho">Falar com Wakilon</a>
         </nav>
       </header>
@@ -350,6 +392,38 @@ export default function SiteClient() {
           </div>
         </section>
 
+        {settings.bannerEnabled && (
+          <section className="spotlight-section" aria-label="Destaque editorial">
+            <div className="container">
+              <div
+                className={settings.bannerImageData ? "spotlight-banner spotlight-banner-image" : "spotlight-banner"}
+                style={settings.bannerImageData ? { backgroundImage: `linear-gradient(90deg,rgba(2,9,24,.98),rgba(2,9,24,.76)),url(${settings.bannerImageData})` } : undefined}
+              >
+                <div className="spotlight-copy">
+                  <span>{settings.bannerEyebrow}</span>
+                  <h2>{settings.bannerTitle}</h2>
+                  <p>{settings.bannerText}</p>
+                  <a
+                    href={settings.bannerButtonUrl || "/blog/"}
+                    className="button spotlight-button"
+                    data-track-event="blog_banner_click"
+                    data-track-label={settings.bannerButtonLabel || "Explorar o Blog"}
+                  >
+                    {settings.bannerButtonLabel || "Explorar o Blog"} <ArrowIcon />
+                  </a>
+                </div>
+                {!settings.bannerImageData && (
+                  <div className="spotlight-visual" aria-hidden="true">
+                    <span className="spotlight-orbit" />
+                    <img src="/services/direcao-comercial.png" alt="" width="480" height="480" loading="lazy" />
+                    <div><b>CONTEÚDO PRÁTICO</b><small>Gestão • Marketing • Dados</small></div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
         <section id="processo" className="section process-section">
           <div className="container">
             <div className="section-heading split-heading">
@@ -406,8 +480,15 @@ export default function SiteClient() {
               <p>Veja o essencial primeiro. Abra apenas o serviço que deseja entender melhor.</p>
             </div>
             <div className="services-grid">
-              {services.map((service, index) => (
-                <article className={openService === index ? "service-card service-card-open" : "service-card"} key={service.title}>
+              {services.map((service, index) => {
+                const theme = settings.serviceStyle === "mixed" ? service.theme : settings.serviceStyle;
+                return (
+                <article
+                  className={`service-card service-${theme}${openService === index ? " service-card-open" : ""}`}
+                  key={service.title}
+                  onPointerMove={moveServiceCard}
+                  onPointerLeave={resetServiceCard}
+                >
                   <div className="service-visual">
                     <span className="service-number">{service.number}</span>
                     <img src={service.image} alt={service.alt} width="320" height="320" loading="lazy" />
@@ -425,7 +506,7 @@ export default function SiteClient() {
                       data-track-label={`Serviço: ${service.title}`}
                       onClick={() => setOpenService((current) => current === index ? null : index)}
                     >
-                      <span>{openService === index ? "Ocultar detalhes" : "Ver detalhes"}</span>
+                      <span>{openService === index ? "Mostrar menos" : "Saiba mais"}</span>
                       <i aria-hidden="true">+</i>
                     </button>
                     <div
@@ -440,7 +521,8 @@ export default function SiteClient() {
                     </div>
                   </div>
                 </article>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
@@ -595,7 +677,7 @@ export default function SiteClient() {
       <footer className="site-footer">
         <div className="container footer-grid">
           <div className="footer-brand"><Brand settings={settings} /><p>Marketing, tráfego e processos de aquisição para advogados que querem crescer com direção.</p></div>
-          <div><span className="footer-title">NAVEGAÇÃO</span><a href="#processo">Processo</a><a href="#servicos">Serviços</a><a href="#planos">Planos</a><a href="#sobre">Sobre</a></div>
+          <div><span className="footer-title">NAVEGAÇÃO</span><a href="#processo">Processo</a><a href="#servicos">Serviços</a><a href="#planos">Planos</a><a href="#sobre">Sobre</a><Link href="/blog/">Blog</Link></div>
           <div><span className="footer-title">CANAIS</span><a href={`mailto:${settings.email}`} data-track-event="generate_lead" data-track-label="E-mail do rodapé">{settings.email}</a><a href={settings.instagram} target="_blank" rel="noreferrer" data-track-event="outbound_click" data-track-label="Instagram">Instagram</a><a href={settings.youtube} target="_blank" rel="noreferrer" data-track-event="outbound_click" data-track-label="YouTube">YouTube</a></div>
           <div><span className="footer-title">INFORMAÇÕES</span><a href="/privacidade">Política de Privacidade</a><a href="/termos">Termos de Uso</a><a href="/painel" className="admin-link" rel="nofollow">Painel de edição</a></div>
         </div>
