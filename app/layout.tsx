@@ -4,8 +4,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://wakilongestor.com.br"),
-  title: "Marketing para Advogados | Wakilon Gestor",
-  description: "Marketing para advogados previdenciaristas com tráfego pago, landing pages, funil, rastreamento e processo comercial. Atendimento em todo o Brasil.",
+  title: "Gestão de Tráfego para Advogados | Wakilon Gestor",
+  description: "Gestão de Meta Ads e Google Ads, campanhas para WhatsApp, landing pages, funil de qualificação e rastreamento para advogados em todo o Brasil.",
   applicationName: "Wakilon Gestor",
   keywords: [
     "marketing para advogados",
@@ -14,6 +14,7 @@ export const metadata: Metadata = {
     "gestor de tráfego jurídico",
     "marketing para advogados previdenciaristas",
     "funil de captação para advogados",
+    "campanhas de WhatsApp para advogados",
     "landing page para advocacia",
     "Wakilon Gestor",
   ],
@@ -38,14 +39,14 @@ export const metadata: Metadata = {
     locale: "pt_BR",
     url: "https://wakilongestor.com.br/",
     siteName: "Wakilon Gestor",
-    title: "Marketing para Advogados | Wakilon Gestor",
-    description: "Tráfego pago, funil, landing pages e rastreamento para advogados que querem crescer com direção.",
+    title: "Gestão de Tráfego para Advogados | Wakilon Gestor",
+    description: "Meta Ads, Google Ads, campanhas para WhatsApp, landing pages, funil e rastreamento para advogados.",
     images: [{ url: "/og.png", width: 1200, height: 630, alt: "Wakilon Gestor — Marketing para Advogados" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Marketing para Advogados | Wakilon Gestor",
-    description: "Tráfego pago, funil, landing pages e rastreamento para advogados.",
+    title: "Gestão de Tráfego para Advogados | Wakilon Gestor",
+    description: "Meta Ads, Google Ads, campanhas para WhatsApp, landing pages, funil e rastreamento.",
     images: ["/og.png"],
   },
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
@@ -74,11 +75,11 @@ export default function RootLayout({
         url: "https://wakilongestor.com.br/",
         logo: "https://wakilongestor.com.br/favicon.svg",
         image: "https://wakilongestor.com.br/og.png",
-        description: "Marketing, tráfego pago, landing pages, funis e rastreamento de dados para advogados.",
+        description: "Gestão de tráfego, campanhas para WhatsApp, landing pages, funis e rastreamento de dados para advogados.",
         telephone: "+55 68 99916-7371",
         email: "contato@wakilongestor.com.br",
         priceRange: "R$ 800 a R$ 1.500 por mês",
-        founder: { "@type": "Person", name: "Wakilon Ferreira" },
+        founder: { "@id": "https://wakilongestor.com.br/#wakilon-ferreira" },
         address: {
           "@type": "PostalAddress",
           addressLocality: "Rio Branco",
@@ -111,6 +112,25 @@ export default function RootLayout({
         },
       },
       {
+        "@type": "Person",
+        "@id": "https://wakilongestor.com.br/#wakilon-ferreira",
+        name: "Wakilon Ferreira",
+        jobTitle: "Gestor de Tráfego e Estrategista de Marketing",
+        description: "Profissional de marketing com mais de cinco anos de experiência em tráfego pago e campanhas de vendas.",
+        worksFor: { "@id": "https://wakilongestor.com.br/#organization" },
+        knowsAbout: [
+          "Meta Ads",
+          "Google Ads",
+          "Campanhas para WhatsApp",
+          "Landing pages",
+          "Funis de qualificação",
+          "Rastreamento de conversões",
+          "Marketing para e-commerce",
+          "Marketing imobiliário",
+          "CRM e processo comercial",
+        ],
+      },
+      {
         "@type": "WebSite",
         "@id": "https://wakilongestor.com.br/#website",
         url: "https://wakilongestor.com.br/",
@@ -123,8 +143,8 @@ export default function RootLayout({
         "@type": "WebPage",
         "@id": "https://wakilongestor.com.br/#webpage",
         url: "https://wakilongestor.com.br/",
-        name: "Marketing para Advogados | Wakilon Gestor",
-        description: "Marketing para advogados com tráfego pago, funil, landing pages e rastreamento.",
+        name: "Gestão de Tráfego para Advogados | Wakilon Gestor",
+        description: "Gestão de tráfego, campanhas para WhatsApp, funil, landing pages e rastreamento para advogados.",
         isPartOf: { "@id": "https://wakilongestor.com.br/#website" },
         about: { "@id": "https://wakilongestor.com.br/#organization" },
         inLanguage: "pt-BR",
@@ -135,7 +155,6 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
-        <meta name="codex-preview" content="development" />
         {/* Google tag (gtag.js) — GA4 principal do site */}
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-L8HFJW94KT" />
         <script

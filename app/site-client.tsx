@@ -35,12 +35,18 @@ export type SiteSettings = {
 
 export const SETTINGS_KEY = "wakilon-site-settings-v1";
 
+const previousHeroCopy = {
+  eyebrow: "MARKETING E AQUISIÇÃO PARA ADVOGADOS",
+  title: "Marketing para advogados que transforma posicionamento em oportunidades.",
+  subtitle: "Estratégia, tráfego pago, funil e rastreamento trabalhando juntos para atrair, qualificar e acompanhar novas oportunidades com clareza.",
+};
+
 export const defaultSettings: SiteSettings = {
   brandName: "WAKILON GESTOR",
-  heroEyebrow: "MARKETING E AQUISIÇÃO PARA ADVOGADOS",
-  heroTitle: "Marketing para advogados que transforma posicionamento em oportunidades.",
+  heroEyebrow: "TRÁFEGO PAGO, FUNIL E RASTREAMENTO PARA ADVOGADOS",
+  heroTitle: "Gestão de tráfego, funil e rastreamento para advogados.",
   heroSubtitle:
-    "Estratégia, tráfego pago, funil e rastreamento trabalhando juntos para atrair, qualificar e acompanhar novas oportunidades com clareza.",
+    "Planejo campanhas no Meta Ads, Google Ads e WhatsApp, estruturo landing pages e qualificação de leads e conecto os dados ao seu processo comercial.",
   email: "contato@wakilongestor.com.br",
   whatsapp: "5568999167371",
   instagram: "https://instagram.com/wakilongestor",
@@ -63,6 +69,14 @@ export const defaultSettings: SiteSettings = {
   essentialPrice: "R$ 1.200",
   completePrice: "R$ 1.500",
 };
+
+export function mergeSiteSettings(saved: Partial<SiteSettings>) {
+  const merged = { ...defaultSettings, ...saved };
+  if (saved.heroEyebrow === previousHeroCopy.eyebrow) merged.heroEyebrow = defaultSettings.heroEyebrow;
+  if (saved.heroTitle === previousHeroCopy.title) merged.heroTitle = defaultSettings.heroTitle;
+  if (saved.heroSubtitle === previousHeroCopy.subtitle) merged.heroSubtitle = defaultSettings.heroSubtitle;
+  return merged;
+}
 
 const acquisitionSteps = [
   {
@@ -240,9 +254,19 @@ function ArrowIcon() {
 
 function VerifiedIcon() {
   return (
-    <svg className="verified-icon" viewBox="0 0 20 20" aria-hidden="true">
+    <svg className="verified-icon" viewBox="0 0 20 20" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
       <path d="M10 1.8l2.1 1.35 2.5-.08.82 2.36 2.08 1.4-.7 2.4.7 2.4-2.08 1.4-.82 2.36-2.5-.08L10 18.2l-2.1-1.35-2.5.08-.82-2.36-2.08-1.4.7-2.4-.7-2.4 2.08-1.4.82-2.36 2.5.08L10 1.8z" fill="currentColor" />
       <path d="M6.8 10.1l2.05 2.05 4.35-4.4" fill="none" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CheckoutSealIcon({ type }: { type: "shield" | "chat" | "direction" }) {
+  return (
+    <svg className="checkout-seal-icon" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      {type === "shield" && <><path d="M12 2.7 19 5.5v5.7c0 4.4-2.7 8.2-7 10.1-4.3-1.9-7-5.7-7-10.1V5.5L12 2.7Z" /><path d="m8.5 12 2.2 2.2 4.8-5" /></>}
+      {type === "chat" && <><path d="M4.2 5.1h15.6v10.3H10l-4.6 3v-3H4.2V5.1Z" /><path d="M8 9.1h8M8 12h5.4" /></>}
+      {type === "direction" && <><circle cx="12" cy="12" r="8.7" /><path d="m14.9 8.3-1.6 5-5 1.6 1.6-5 5-1.6Z" /></>}
     </svg>
   );
 }
@@ -261,17 +285,37 @@ export default function SiteClient() {
   const [openService, setOpenService] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<PlanId>("essencial");
+  const [aboutExpanded, setAboutExpanded] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       try {
         const saved = window.localStorage.getItem(SETTINGS_KEY);
-        if (saved) setSettings({ ...defaultSettings, ...JSON.parse(saved) });
+        if (saved) setSettings(mergeSiteSettings(JSON.parse(saved)));
       } catch {
         setSettings(defaultSettings);
       }
     }, 0);
     return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const items = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
+    if (!items.length) return;
+    items.forEach((item) => item.classList.add("reveal-ready"));
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || !("IntersectionObserver" in window)) {
+      items.forEach((item) => item.classList.add("is-visible"));
+      return;
+    }
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-visible");
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: 0.12, rootMargin: "0px 0px -6%" });
+    items.forEach((item) => observer.observe(item));
+    return () => observer.disconnect();
   }, []);
 
   const contact = useMemo(() => contactHref(settings), [settings]);
@@ -396,7 +440,7 @@ export default function SiteClient() {
           <section className="spotlight-section" aria-label="Destaque editorial">
             <div className="container">
               <div
-                className={settings.bannerImageData ? "spotlight-banner spotlight-banner-image" : "spotlight-banner"}
+                className={settings.bannerImageData ? "spotlight-banner spotlight-banner-image reveal" : "spotlight-banner reveal"}
                 style={settings.bannerImageData ? { backgroundImage: `linear-gradient(90deg,rgba(2,9,24,.98),rgba(2,9,24,.76)),url(${settings.bannerImageData})` } : undefined}
               >
                 <div className="spotlight-copy">
@@ -426,7 +470,7 @@ export default function SiteClient() {
 
         <section id="processo" className="section process-section">
           <div className="container">
-            <div className="section-heading split-heading">
+            <div className="section-heading split-heading reveal">
               <div>
                 <span className="section-kicker">PROCESSO DE AQUISIÇÃO</span>
                 <h2>Não é apenas anúncio.<br />É uma jornada conectada.</h2>
@@ -434,7 +478,7 @@ export default function SiteClient() {
               <p>Clique em cada etapa e veja como a estratégia transforma atenção em oportunidades acompanháveis.</p>
             </div>
 
-            <div className="funnel-shell">
+            <div className="funnel-shell reveal">
               <div className="funnel-tabs" role="tablist" aria-label="Etapas do processo">
                 {acquisitionSteps.map((step, index) => (
                   <button
@@ -474,12 +518,12 @@ export default function SiteClient() {
 
         <section id="servicos" className="section services-section">
           <div className="container">
-            <div className="section-heading centered-heading">
+            <div className="section-heading centered-heading reveal">
               <span className="section-kicker">MARKETING PARA ADVOGADOS</span>
               <h2>Serviços conectados em<br />uma estratégia mais inteligente.</h2>
               <p>Veja o essencial primeiro. Abra apenas o serviço que deseja entender melhor.</p>
             </div>
-            <div className="services-grid">
+            <div className="services-grid reveal">
               {services.map((service, index) => {
                 const theme = settings.serviceStyle === "mixed" ? service.theme : settings.serviceStyle;
                 return (
@@ -528,7 +572,7 @@ export default function SiteClient() {
         </section>
 
         <section className="section method-section">
-          <div className="container method-grid">
+          <div className="container method-grid reveal">
             <div className="method-copy">
               <span className="section-kicker">CLAREZA ANTES DA ESCALA</span>
               <h2>Mais controle sobre o que acontece depois do clique.</h2>
@@ -554,12 +598,12 @@ export default function SiteClient() {
 
         <section id="planos" className="section pricing-section">
           <div className="container">
-            <div className="section-heading centered-heading">
+            <div className="section-heading centered-heading reveal">
               <span className="section-kicker">INVESTIMENTO E ESTRUTURA</span>
               <h2>Planos claros para avançar<br />com estratégia e direção.</h2>
               <p>Compare as entregas, selecione a estrutura mais coerente com o seu momento e fale diretamente comigo pelo WhatsApp.</p>
             </div>
-            <div className="pricing-grid">
+            <div className="pricing-grid reveal">
               {planCatalog.map((plan) => {
                 const isSelected = selectedPlanId === plan.id;
                 return (
@@ -587,7 +631,7 @@ export default function SiteClient() {
               })}
             </div>
 
-            <div id="checkout" className="checkout-shell">
+            <div id="checkout" className="checkout-shell reveal">
               <div className="checkout-content">
                 <span className="section-kicker">PRÓXIMO PASSO</span>
                 <h3>Confirme sua escolha e fale diretamente comigo.</h3>
@@ -597,7 +641,11 @@ export default function SiteClient() {
                   <span><b>02</b><small>Conversamos no WhatsApp</small></span>
                   <span><b>03</b><small>Você recebe o direcionamento</small></span>
                 </div>
-                <div className="checkout-trust"><VerifiedIcon /><span><b>Atendimento direto</b><small>Sem formulário longo e sem compromisso automático.</small></span></div>
+                <div className="checkout-seals" aria-label="Compromissos do atendimento">
+                  <span><i><CheckoutSealIcon type="shield" /></i><span><b>Escopo confirmado</b><small>Antes de qualquer início</small></span></span>
+                  <span><i><CheckoutSealIcon type="chat" /></i><span><b>Contato direto</b><small>Pelo WhatsApp</small></span></span>
+                  <span><i><CheckoutSealIcon type="direction" /></i><span><b>Direção responsável</b><small>Sem promessa de resultado</small></span></span>
+                </div>
               </div>
               <aside className="checkout-summary" aria-label={`Resumo do Plano ${selectedPlan.name}`}>
                 <div className="summary-topline"><span>SEU PLANO</span><i>SELECIONADO</i></div>
@@ -620,7 +668,7 @@ export default function SiteClient() {
               </aside>
             </div>
 
-            <div className="market-anchor">
+            <div className="market-anchor reveal">
               <div>
                 <span className="section-kicker">REFERÊNCIA DE MERCADO</span>
                 <h3>Compare o conjunto, não apenas uma entrega isolada.</h3>
@@ -636,7 +684,7 @@ export default function SiteClient() {
         </section>
 
         <section id="sobre" className="section about-section">
-          <div className="container about-grid">
+          <div className="container about-grid reveal">
             <div className="about-visual" style={settings.aboutImageData ? { backgroundImage: `url(${settings.aboutImageData})` } : undefined}>
               {!settings.aboutImageData && (
                 <div className="about-monogram"><span>WG</span><small>ESTRATÉGIA • DADOS • CRESCIMENTO</small></div>
@@ -645,17 +693,40 @@ export default function SiteClient() {
             </div>
             <div className="about-copy">
               <span className="section-kicker">WAKILON GESTOR</span>
-              <h2>Marketing que respeita o seu momento e a responsabilidade da advocacia.</h2>
-              <p>Eu ajudo advogados, especialmente previdenciaristas, a organizar sua presença digital e o processo de aquisição com estratégia, tecnologia e acompanhamento próximo.</p>
-              <p>O trabalho vai além de colocar campanhas no ar: conecto tráfego, páginas, qualificação, rastreamento e processo comercial para você investir com mais clareza.</p>
-              <div className="about-values"><span><b>Direção</b><small>Antes de investir</small></span><span><b>Transparência</b><small>Na leitura dos dados</small></span><span><b>Evolução</b><small>Com melhoria contínua</small></span></div>
-              <a href={contact} target="_blank" rel="noreferrer" className="text-link strong-link" data-track-event="generate_lead" data-track-label="Bloco sobre">Vamos conversar <ArrowIcon /></a>
+              <h2>Experiência prática em campanhas, vendas e aquisição digital.</h2>
+              <p>Sou Wakilon Ferreira, profissional de marketing com mais de cinco anos de experiência em tráfego pago e campanhas de vendas.</p>
+              <p>Hoje atuo com foco em advogados, conectando anúncios, páginas, funis, WhatsApp, rastreamento e organização comercial em uma estrutura clara.</p>
+              <div className="about-values"><span><b>5+ anos</b><small>Em tráfego pago</small></span><span><b>Meta + Google</b><small>Gestão de campanhas</small></span><span><b>WhatsApp</b><small>Funis e conversas</small></span></div>
+              <button
+                type="button"
+                className="about-toggle"
+                aria-expanded={aboutExpanded}
+                aria-controls="about-details"
+                onClick={() => setAboutExpanded((current) => !current)}
+              >
+                {aboutExpanded ? "Mostrar menos" : "Saiba mais sobre minha experiência"}<i aria-hidden="true">+</i>
+              </button>
+              <div id="about-details" className={aboutExpanded ? "about-disclosure is-open" : "about-disclosure"} aria-hidden={!aboutExpanded}>
+                <div className="about-disclosure-inner">
+                  <p>Minha experiência inclui campanhas de venda para e-commerce, geração e qualificação de oportunidades para o mercado imobiliário, negócios locais e outros segmentos. Essa visão de diferentes operações ajuda a adaptar a estratégia ao momento, à oferta e à capacidade real de atendimento de cada cliente.</p>
+                  <div className="experience-track">
+                    <span><i>01</i><b>Campanhas para WhatsApp</b><small>Anúncios de conversa, mensagens coerentes, qualificação, rastreamento e organização do atendimento.</small></span>
+                    <span><i>02</i><b>E-commerce e vendas</b><small>Campanhas orientadas a produto, oferta, criativos, jornada de compra e leitura de desempenho.</small></span>
+                    <span><i>03</i><b>Mercado imobiliário</b><small>Geração de contatos para imóveis, segmentação regional, apresentação da oferta e acompanhamento dos leads.</small></span>
+                  </div>
+                  <h3>Competências aplicadas aos projetos</h3>
+                  <div className="competency-grid">
+                    <span>Planejamento de campanhas</span><span>Meta Ads e Google Ads</span><span>Campanhas para WhatsApp</span><span>Landing pages e funis</span><span>GTM, pixels e eventos</span><span>CRM e processo comercial</span><span>Análise e otimização</span><span>Direção de criativos</span>
+                  </div>
+                  <a href={contact} target="_blank" rel="noreferrer" className="text-link strong-link" data-track-event="generate_lead" data-track-label="Experiência no bloco sobre">Conversar sobre meu projeto <ArrowIcon /></a>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
         <section className="section faq-section">
-          <div className="container faq-grid">
+          <div className="container faq-grid reveal">
             <div className="section-heading"><span className="section-kicker">PERGUNTAS FREQUENTES</span><h2>Clareza antes de começar.</h2><p>Respostas diretas para as principais dúvidas sobre a parceria.</p></div>
             <div className="accordion-list">
               <details open><summary>O investimento em anúncios está incluso?<span>+</span></summary><p>Não. A verba de mídia é paga diretamente às plataformas e definida conforme objetivo, região e capacidade de atendimento.</p></details>
@@ -667,7 +738,7 @@ export default function SiteClient() {
         </section>
 
         <section id="contato" className="cta-section">
-          <div className="container cta-inner">
+          <div className="container cta-inner reveal">
             <div><span className="section-kicker">PRÓXIMO PASSO</span><h2>Quer construir uma aquisição mais clara para o seu escritório?</h2><p>Conte seu momento. A conversa inicial serve para entender o cenário e indicar a estrutura que realmente faz sentido.</p></div>
             <a className="button button-light" href={contact} target="_blank" rel="noreferrer" data-track-event="generate_lead" data-track-label="CTA final">QUERO CONVERSAR <ArrowIcon /></a>
           </div>
@@ -679,7 +750,7 @@ export default function SiteClient() {
           <div className="footer-brand"><Brand settings={settings} /><p>Marketing, tráfego e processos de aquisição para advogados que querem crescer com direção.</p></div>
           <div><span className="footer-title">NAVEGAÇÃO</span><a href="#processo">Processo</a><a href="#servicos">Serviços</a><a href="#planos">Planos</a><a href="#sobre">Sobre</a><Link href="/blog/">Blog</Link></div>
           <div><span className="footer-title">CANAIS</span><a href={`mailto:${settings.email}`} data-track-event="generate_lead" data-track-label="E-mail do rodapé">{settings.email}</a><a href={settings.instagram} target="_blank" rel="noreferrer" data-track-event="outbound_click" data-track-label="Instagram">Instagram</a><a href={settings.youtube} target="_blank" rel="noreferrer" data-track-event="outbound_click" data-track-label="YouTube">YouTube</a></div>
-          <div><span className="footer-title">INFORMAÇÕES</span><a href="/privacidade">Política de Privacidade</a><a href="/termos">Termos de Uso</a><a href="/painel" className="admin-link" rel="nofollow">Painel de edição</a></div>
+          <div><span className="footer-title">INFORMAÇÕES</span><a href="/privacidade">Política de Privacidade</a><a href="/termos">Termos de Uso</a></div>
         </div>
         <div className="container footer-bottom"><span>© 2026 {settings.brandName}. Todos os direitos reservados.</span><span>Desenvolvido com estratégia e propósito.</span></div>
       </footer>

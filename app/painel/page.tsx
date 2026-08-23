@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, useEffect, useState } from "react";
-import { Brand, defaultSettings, SETTINGS_KEY, SiteSettings } from "../site-client";
+import { Brand, defaultSettings, mergeSiteSettings, SETTINGS_KEY, SiteSettings } from "../site-client";
 
 type AssetKey = "faviconData" | "logoData" | "heroImageData" | "aboutImageData" | "bannerImageData";
 
@@ -40,7 +40,7 @@ export default function AdminPage() {
     const timer = window.setTimeout(() => {
       try {
         const saved = localStorage.getItem(SETTINGS_KEY);
-        if (saved) setSettings({ ...defaultSettings, ...JSON.parse(saved) });
+        if (saved) setSettings(mergeSiteSettings(JSON.parse(saved)));
       } catch {
         setStatus("As configurações salvas não puderam ser carregadas.");
       }
@@ -115,7 +115,7 @@ export default function AdminPage() {
     reader.onload = () => {
       try {
         const imported = JSON.parse(String(reader.result));
-        setSettings({ ...defaultSettings, ...imported });
+        setSettings(mergeSiteSettings(imported));
         setStatus("Backup importado. Clique em Salvar alterações.");
       } catch {
         setStatus("Este arquivo de configuração não é válido.");
