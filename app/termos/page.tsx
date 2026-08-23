@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import LegalPage from "../legal-page";
 
-export const metadata: Metadata = { title: "Termos de Uso | Wakilon Gestor", description: "Condições de acesso e uso do site Wakilon Gestor." };
+export const metadata: Metadata = {
+  title: "Termos de Uso | Wakilon Gestor",
+  description: "Consulte as condições de acesso, navegação, contratação e uso dos conteúdos e serviços da Wakilon Gestor.",
+  alternates: { canonical: "https://wakilongestor.com.br/termos/" },
+};
 
 export default function TermsPage() {
   return <LegalPage kicker="CONDIÇÕES DE ACESSO" title="Termos de Uso" intro="Ao navegar neste site, você concorda com as condições abaixo. Leia com atenção antes de utilizar conteúdos, formulários ou canais de contato." sections={[

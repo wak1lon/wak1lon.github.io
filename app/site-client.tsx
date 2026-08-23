@@ -29,11 +29,11 @@ export const SETTINGS_KEY = "wakilon-site-settings-v1";
 export const defaultSettings: SiteSettings = {
   brandName: "WAKILON GESTOR",
   heroEyebrow: "MARKETING E AQUISIÇÃO PARA ADVOGADOS",
-  heroTitle: "Transforme posicionamento em oportunidades de contratos.",
+  heroTitle: "Marketing para advogados que transforma posicionamento em oportunidades.",
   heroSubtitle:
     "Estratégia, tráfego pago, funil e rastreamento trabalhando juntos para atrair, qualificar e acompanhar novas oportunidades com clareza.",
   email: "contato@wakilongestor.com.br",
-  whatsapp: "",
+  whatsapp: "5568999167371",
   instagram: "https://instagram.com/wakilongestor",
   youtube: "https://youtube.com/@wakilongestor",
   faviconData: "",
@@ -129,19 +129,46 @@ const services = [
   },
 ];
 
+const planCatalog = [
+  {
+    id: "basico",
+    name: "Básico",
+    eyebrow: "Primeiros passos",
+    description: "Para iniciar campanhas com uma estrutura objetiva e acompanhamento profissional.",
+    features: ["Gestão de Meta Ads", "Gestão de Google Ads", "Funil de qualificação", "Relatório periódico"],
+    featured: false,
+  },
+  {
+    id: "essencial",
+    name: "Essencial",
+    eyebrow: "Estrutura integrada",
+    description: "Para conectar aquisição, conversão, rastreamento e apoio ao processo de vendas.",
+    features: ["Meta Ads + Google Ads", "Landing page profissional", "Funil de qualificação", "Rastreamento de conversões", "Apoio no processo de vendas", "Relatório periódico"],
+    featured: true,
+  },
+  {
+    id: "completo",
+    name: "Completo",
+    eyebrow: "Mais canais e direção",
+    description: "Para ampliar presença, canais de aquisição e organização comercial.",
+    features: ["Tudo do Plano Essencial", "Gestão de TikTok Ads", "Direcionamento comercial", "Google Meu Negócio", "Orientação de CRM", "Relatório periódico"],
+    featured: false,
+  },
+] as const;
+
+type PlanId = (typeof planCatalog)[number]["id"];
+
 function cleanPhone(value: string) {
   return value.replace(/\D/g, "");
 }
 
-export function contactHref(settings: SiteSettings) {
-  const phone = cleanPhone(settings.whatsapp);
-  if (phone) {
-    const message = encodeURIComponent(
-      "Olá, Wakilon! Quero entender qual estrutura de marketing faz sentido para meu escritório.",
-    );
-    return `https://wa.me/${phone}?text=${message}`;
-  }
-  return `mailto:${settings.email}?subject=${encodeURIComponent("Quero estruturar meu marketing jurídico")}`;
+export function contactHref(settings: SiteSettings, planName?: string) {
+  const phone = cleanPhone(settings.whatsapp) || "5568999167371";
+  const complement = planName
+    ? ` Quero saber mais sobre o Plano ${planName}.`
+    : " Quero entender qual estrutura de marketing faz sentido para o meu escritório.";
+  const message = encodeURIComponent(`Olá, Wakilon! Vi o site e é realmente isso que estou procurando.${complement}`);
+  return `https://wa.me/${phone}?text=${message}`;
 }
 
 export function Brand({ settings }: { settings: SiteSettings }) {
@@ -164,10 +191,28 @@ function ArrowIcon() {
   );
 }
 
+function VerifiedIcon() {
+  return (
+    <svg className="verified-icon" viewBox="0 0 20 20" aria-hidden="true">
+      <path d="M10 1.8l2.1 1.35 2.5-.08.82 2.36 2.08 1.4-.7 2.4.7 2.4-2.08 1.4-.82 2.36-2.5-.08L10 18.2l-2.1-1.35-2.5.08-.82-2.36-2.08-1.4.7-2.4-.7-2.4 2.08-1.4.82-2.36 2.5.08L10 1.8z" fill="currentColor" />
+      <path d="M6.8 10.1l2.05 2.05 4.35-4.4" fill="none" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function WhatsAppIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M20.5 3.5A11.8 11.8 0 0 0 12.1 0C5.6 0 .3 5.3.3 11.8c0 2.1.5 4.1 1.6 5.9L.2 24l6.4-1.7a11.8 11.8 0 0 0 5.5 1.4h.1c6.5 0 11.8-5.3 11.8-11.8 0-3.2-1.2-6.1-3.5-8.4zm-8.4 18.2c-1.7 0-3.4-.5-4.9-1.3l-.4-.2-3.8 1 1-3.7-.2-.4a9.8 9.8 0 1 1 8.3 4.6zm5.4-7.3c-.3-.1-1.8-.9-2.1-1-.3-.1-.5-.1-.7.2-.2.3-.8 1-1 1.2-.2.2-.4.2-.7.1-1.9-.9-3.2-1.7-4.5-3.9-.3-.5.3-.5.9-1.7.1-.2 0-.4 0-.6l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.2-1.2 2.9s1.2 3.3 1.4 3.5c.1.2 2.5 3.8 6 5.3.8.4 1.5.6 2 .7.8.3 1.6.2 2.2.1.7-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.2-.3-.3-.6-.4z" fill="currentColor" />
+    </svg>
+  );
+}
+
 export default function SiteClient() {
   const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
   const [activeStep, setActiveStep] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState<PlanId>("essencial");
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -182,6 +227,17 @@ export default function SiteClient() {
   }, []);
 
   const contact = useMemo(() => contactHref(settings), [settings]);
+  const planPrices: Record<PlanId, string> = {
+    basico: settings.basicPrice,
+    essencial: settings.essentialPrice,
+    completo: settings.completePrice,
+  };
+  const selectedPlan = planCatalog.find((plan) => plan.id === selectedPlanId) ?? planCatalog[1];
+
+  function selectPlan(planId: PlanId) {
+    setSelectedPlanId(planId);
+    window.requestAnimationFrame(() => document.getElementById("checkout")?.scrollIntoView({ behavior: "smooth", block: "center" }));
+  }
   const heroStyle = settings.heroImageData
     ? { backgroundImage: `linear-gradient(90deg, rgba(2,9,24,.98) 0%, rgba(2,9,24,.86) 47%, rgba(2,9,24,.24) 100%), url(${settings.heroImageData})` }
     : undefined;
@@ -365,39 +421,69 @@ export default function SiteClient() {
         <section id="planos" className="section pricing-section">
           <div className="container">
             <div className="section-heading centered-heading">
-              <span className="section-kicker">PLANOS MENSAIS</span>
-              <h2>Escolha a estrutura ideal<br />para o seu momento.</h2>
-              <p>Planos objetivos, com entregas claras e sem incluir a verba investida diretamente nas plataformas.</p>
+              <span className="section-kicker">INVESTIMENTO E ESTRUTURA</span>
+              <h2>Planos claros para avançar<br />com estratégia e direção.</h2>
+              <p>Compare as entregas, selecione a estrutura mais coerente com o seu momento e fale diretamente comigo pelo WhatsApp.</p>
             </div>
             <div className="pricing-grid">
-              <article className="price-card">
-                <div className="price-head"><span>BÁSICO</span><small>Primeiros passos</small></div>
-                <div className="price"><strong>{settings.basicPrice}</strong><span>/mês</span></div>
-                <p>Para quem precisa começar a anunciar com uma estrutura enxuta.</p>
+              {planCatalog.map((plan) => {
+                const isSelected = selectedPlanId === plan.id;
+                return (
+                  <article className={`price-card${plan.featured ? " featured-price" : ""}${isSelected ? " selected-price" : ""}`} key={plan.id}>
+                    {plan.featured && <div className="recommended"><VerifiedIcon /> MAIS ESCOLHIDO</div>}
+                    <div className="price-head"><span>PLANO {plan.name.toUpperCase()}</span><small>{plan.eyebrow}</small></div>
+                    <div className="price"><strong>{planPrices[plan.id]}</strong><span>/mês</span></div>
+                    <p>{plan.description}</p>
+                    <ul>
+                      {plan.features.map((feature) => <li key={feature}><VerifiedIcon /><span>{feature}</span></li>)}
+                    </ul>
+                    <button
+                      type="button"
+                      className={plan.featured ? "button button-primary plan-select" : "button button-outline plan-select"}
+                      aria-pressed={isSelected}
+                      onClick={() => selectPlan(plan.id)}
+                      data-track-event="select_item"
+                      data-track-label={`Selecionar Plano ${plan.name}`}
+                      data-track-plan={plan.name}
+                    >
+                      {isSelected ? "PLANO SELECIONADO" : "ESCOLHER ESTE PLANO"} <ArrowIcon />
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
+
+            <div id="checkout" className="checkout-shell">
+              <div className="checkout-content">
+                <span className="section-kicker">PRÓXIMO PASSO</span>
+                <h3>Confirme sua escolha e fale diretamente comigo.</h3>
+                <p>O contato inicial serve para entender seu cenário, confirmar o escopo e verificar se o plano selecionado realmente faz sentido para o escritório.</p>
+                <div className="checkout-steps" aria-label="Etapas para iniciar">
+                  <span><b>01</b><small>Você seleciona o plano</small></span>
+                  <span><b>02</b><small>Conversamos no WhatsApp</small></span>
+                  <span><b>03</b><small>Você recebe o direcionamento</small></span>
+                </div>
+                <div className="checkout-trust"><VerifiedIcon /><span><b>Atendimento direto</b><small>Sem formulário longo e sem compromisso automático.</small></span></div>
+              </div>
+              <aside className="checkout-summary" aria-label={`Resumo do Plano ${selectedPlan.name}`}>
+                <div className="summary-topline"><span>SEU PLANO</span><i>SELECIONADO</i></div>
+                <div className="summary-plan"><div><small>PLANO</small><strong>{selectedPlan.name}</strong></div><div className="summary-price"><strong>{planPrices[selectedPlan.id]}</strong><small>por mês</small></div></div>
                 <ul>
-                  <li>Meta Ads</li><li>Google Ads</li><li>Funil de qualificação</li><li>Relatório periódico</li>
+                  {selectedPlan.features.slice(0, 4).map((feature) => <li key={feature}><VerifiedIcon />{feature}</li>)}
                 </ul>
-                <a href={contact} target="_blank" rel="noreferrer" className="button button-outline" data-track-event="generate_lead" data-track-label="Plano Básico" data-track-plan="Básico">Quero o Básico <ArrowIcon /></a>
-              </article>
-              <article className="price-card featured-price">
-                <div className="recommended">MAIS ESCOLHIDO</div>
-                <div className="price-head"><span>ESSENCIAL</span><small>Estrutura completa</small></div>
-                <div className="price"><strong>{settings.essentialPrice}</strong><span>/mês</span></div>
-                <p>Para conectar aquisição, conversão e leitura de dados.</p>
-                <ul>
-                  <li>Meta Ads + Google Ads</li><li>Landing page profissional</li><li>Funil de qualificação</li><li>Rastreamento de conversões</li><li>Apoio no processo de vendas</li><li>Relatório periódico</li>
-                </ul>
-                <a href={contact} target="_blank" rel="noreferrer" className="button button-primary" data-track-event="generate_lead" data-track-label="Plano Essencial" data-track-plan="Essencial">Quero o Essencial <ArrowIcon /></a>
-              </article>
-              <article className="price-card">
-                <div className="price-head"><span>COMPLETO</span><small>Mais canais</small></div>
-                <div className="price"><strong>{settings.completePrice}</strong><span>/mês</span></div>
-                <p>Para operações que desejam ampliar presença e organização.</p>
-                <ul>
-                  <li>Tudo do Essencial</li><li>TikTok Ads</li><li>Direcionamento comercial</li><li>Google Meu Negócio</li><li>Orientação de CRM</li><li>Relatório periódico</li>
-                </ul>
-                <a href={contact} target="_blank" rel="noreferrer" className="button button-outline" data-track-event="generate_lead" data-track-label="Plano Completo" data-track-plan="Completo">Quero o Completo <ArrowIcon /></a>
-              </article>
+                <a
+                  href={contactHref(settings, selectedPlan.name)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="button whatsapp-button"
+                  data-track-event="generate_lead"
+                  data-track-label={`Checkout Plano ${selectedPlan.name}`}
+                  data-track-plan={selectedPlan.name}
+                >
+                  <WhatsAppIcon /> CHAMAR NO WHATSAPP
+                </a>
+                <p className="summary-note">Mensagem pronta: “Vi o site e é realmente isso que estou procurando.”</p>
+              </aside>
             </div>
 
             <div className="market-anchor">
@@ -459,7 +545,7 @@ export default function SiteClient() {
           <div className="footer-brand"><Brand settings={settings} /><p>Marketing, tráfego e processos de aquisição para advogados que querem crescer com direção.</p></div>
           <div><span className="footer-title">NAVEGAÇÃO</span><a href="#processo">Processo</a><a href="#servicos">Serviços</a><a href="#planos">Planos</a><a href="#sobre">Sobre</a></div>
           <div><span className="footer-title">CANAIS</span><a href={`mailto:${settings.email}`} data-track-event="generate_lead" data-track-label="E-mail do rodapé">{settings.email}</a><a href={settings.instagram} target="_blank" rel="noreferrer" data-track-event="outbound_click" data-track-label="Instagram">Instagram</a><a href={settings.youtube} target="_blank" rel="noreferrer" data-track-event="outbound_click" data-track-label="YouTube">YouTube</a></div>
-          <div><span className="footer-title">INFORMAÇÕES</span><a href="/privacidade">Política de Privacidade</a><a href="/termos">Termos de Uso</a><a href="/painel" className="admin-link">Painel de edição</a></div>
+          <div><span className="footer-title">INFORMAÇÕES</span><a href="/privacidade">Política de Privacidade</a><a href="/termos">Termos de Uso</a><a href="/painel" className="admin-link" rel="nofollow">Painel de edição</a></div>
         </div>
         <div className="container footer-bottom"><span>© 2026 {settings.brandName}. Todos os direitos reservados.</span><span>Desenvolvido com estratégia e propósito.</span></div>
       </footer>

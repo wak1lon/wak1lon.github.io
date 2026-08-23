@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import LegalPage from "../legal-page";
 
-export const metadata: Metadata = { title: "Política de Privacidade | Wakilon Gestor", description: "Como a Wakilon Gestor coleta, utiliza e protege dados pessoais." };
+export const metadata: Metadata = {
+  title: "Política de Privacidade | Wakilon Gestor",
+  description: "Saiba como a Wakilon Gestor coleta, utiliza, armazena e protege dados pessoais em conformidade com a LGPD.",
+  alternates: { canonical: "https://wakilongestor.com.br/privacidade/" },
+};
 
 export default function PrivacyPage() {
   return <LegalPage kicker="PRIVACIDADE E LGPD" title="Política de Privacidade" intro="Esta política explica de forma transparente como os dados pessoais podem ser tratados durante o uso do site e o contato com a Wakilon Gestor." sections={[
