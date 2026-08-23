@@ -92,39 +92,63 @@ const acquisitionSteps = [
 
 const services = [
   {
-    icon: "↗",
+    number: "01",
+    stage: "Atração",
+    image: "/services/trafego-pago.png",
+    alt: "Representação visual de campanhas de tráfego pago para advogados",
     title: "Tráfego Pago",
-    text: "Gestão de campanhas no Meta Ads e Google Ads, com TikTok Ads nos projetos adequados.",
+    summary: "Campanhas para colocar sua proposta diante do público certo.",
+    details: "Planejamento, gestão e otimização no Meta Ads e Google Ads, com TikTok Ads quando houver aderência ao projeto.",
     tags: ["Meta Ads", "Google Ads", "TikTok Ads"],
   },
   {
-    icon: "◇",
+    number: "02",
+    stage: "Conversão",
+    image: "/services/landing-pages.png",
+    alt: "Representação visual de landing page focada em conversão",
     title: "Landing Pages",
-    text: "Páginas rápidas, objetivas e estruturadas para transformar atenção em contato qualificado.",
+    summary: "Páginas rápidas que transformam atenção em contato.",
+    details: "Estrutura responsiva, mensagem objetiva e chamadas para ação pensadas para reduzir distrações e facilitar a conversão.",
     tags: ["Conversão", "Mobile", "Performance"],
   },
   {
-    icon: "⌁",
+    number: "03",
+    stage: "Qualificação",
+    image: "/services/funil-qualificacao.png",
+    alt: "Representação visual de funil de qualificação de oportunidades",
     title: "Funil de Qualificação",
-    text: "Perguntas e caminhos que organizam a jornada e levam ao atendimento com mais contexto.",
+    summary: "Perguntas que qualificam antes do atendimento.",
+    details: "Formulários e caminhos inteligentes registram o contexto essencial e conduzem cada oportunidade ao atendimento adequado.",
     tags: ["Formulários", "Quiz", "WhatsApp"],
   },
   {
-    icon: "⌖",
+    number: "04",
+    stage: "Medição",
+    image: "/services/rastreamento-dados.png",
+    alt: "Representação visual de rastreamento de dados e conversões",
     title: "Rastreamento de Dados",
-    text: "Eventos, pixels e painéis para acompanhar campanhas sem depender apenas de métricas superficiais.",
+    summary: "Dados claros para saber o que realmente funciona.",
+    details: "GTM, pixels e eventos de conversão conectam as ações do site às plataformas de anúncio e apoiam decisões mais seguras.",
     tags: ["GTM", "Pixels", "Conversões"],
   },
   {
-    icon: "◎",
+    number: "05",
+    stage: "Autoridade",
+    image: "/services/presenca-local.png",
+    alt: "Representação visual de presença local e localização no Google",
     title: "Presença Local",
-    text: "Otimização do Google Meu Negócio para reforçar autoridade e facilitar a descoberta regional.",
+    summary: "Mais autoridade para ser encontrado na sua região.",
+    details: "Otimização da presença local para facilitar a descoberta do escritório e transmitir informações consistentes a quem pesquisa.",
     tags: ["Google", "Local", "Autoridade"],
   },
   {
-    icon: "＋",
+    number: "06",
+    stage: "Vendas",
+    image: "/services/direcao-comercial.png",
+    alt: "Representação visual de direção comercial e organização de oportunidades",
     title: "Direção Comercial",
-    text: "Apoio no processo de vendas, CRM e atendimento para aproveitar melhor cada oportunidade gerada.",
+    summary: "Organização para aproveitar melhor cada oportunidade.",
+    details: "Orientação de CRM, rotina de atendimento e acompanhamento comercial para reduzir perdas depois da geração do contato.",
     tags: ["CRM", "Atendimento", "Processo"],
   },
 ];
@@ -211,6 +235,7 @@ function WhatsAppIcon() {
 export default function SiteClient() {
   const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
   const [activeStep, setActiveStep] = useState(0);
+  const [openService, setOpenService] = useState<number | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<PlanId>("essencial");
 
@@ -376,17 +401,44 @@ export default function SiteClient() {
         <section id="servicos" className="section services-section">
           <div className="container">
             <div className="section-heading centered-heading">
-              <span className="section-kicker">ESTRUTURA COMPLETA</span>
-              <h2>Os serviços que sustentam<br />uma aquisição mais inteligente.</h2>
-              <p>Cada solução entra quando faz sentido para o momento e a capacidade do seu escritório.</p>
+              <span className="section-kicker">MARKETING PARA ADVOGADOS</span>
+              <h2>Serviços conectados em<br />uma estratégia mais inteligente.</h2>
+              <p>Veja o essencial primeiro. Abra apenas o serviço que deseja entender melhor.</p>
             </div>
             <div className="services-grid">
-              {services.map((service) => (
-                <article className="service-card" key={service.title}>
-                  <div className="service-icon">{service.icon}</div>
-                  <h3>{service.title}</h3>
-                  <p>{service.text}</p>
-                  <div className="tag-row">{service.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
+              {services.map((service, index) => (
+                <article className={openService === index ? "service-card service-card-open" : "service-card"} key={service.title}>
+                  <div className="service-visual">
+                    <span className="service-number">{service.number}</span>
+                    <img src={service.image} alt={service.alt} width="320" height="320" loading="lazy" />
+                  </div>
+                  <div className="service-card-copy">
+                    <span className="service-stage">{service.stage}</span>
+                    <h3>{service.title}</h3>
+                    <p className="service-summary">{service.summary}</p>
+                    <button
+                      className="service-toggle"
+                      type="button"
+                      aria-expanded={openService === index}
+                      aria-controls={`service-detail-${index}`}
+                      data-track-event={openService === index ? "service_detail_close" : "service_detail_view"}
+                      data-track-label={`Serviço: ${service.title}`}
+                      onClick={() => setOpenService((current) => current === index ? null : index)}
+                    >
+                      <span>{openService === index ? "Ocultar detalhes" : "Ver detalhes"}</span>
+                      <i aria-hidden="true">+</i>
+                    </button>
+                    <div
+                      id={`service-detail-${index}`}
+                      className="service-disclosure"
+                      aria-hidden={openService !== index}
+                    >
+                      <div className="service-disclosure-inner">
+                        <p>{service.details}</p>
+                        <div className="tag-row">{service.tags.map((tag) => <span key={tag}>✓ {tag}</span>)}</div>
+                      </div>
+                    </div>
+                  </div>
                 </article>
               ))}
             </div>
