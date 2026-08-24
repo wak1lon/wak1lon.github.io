@@ -4,6 +4,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import CookieSettingsButton from "./cookie-settings-button";
 
 export type SiteSettings = {
   brandName: string;
@@ -288,16 +289,52 @@ export default function SiteClient() {
   const [aboutExpanded, setAboutExpanded] = useState(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
+    let cancelled = false;
+    const loadLocal = () => {
       try {
         const saved = window.localStorage.getItem(SETTINGS_KEY);
-        if (saved) setSettings(mergeSiteSettings(JSON.parse(saved)));
+        if (saved && !cancelled) setSettings(mergeSiteSettings(JSON.parse(saved)));
       } catch {
-        setSettings(defaultSettings);
+        if (!cancelled) setSettings(defaultSettings);
       }
-    }, 0);
-    return () => window.clearTimeout(timer);
+    };
+    const loadPublished = async () => {
+      loadLocal();
+      try {
+        const { loadPublishedSiteSettings } = await import("./site-settings-store");
+        const published = await loadPublishedSiteSettings();
+        if (!published || cancelled) return;
+        setSettings(published);
+        window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(published));
+      } catch {
+        // O conteúdo padrão/local mantém o site utilizável se o Firebase estiver indisponível.
+      }
+    };
+    const handleStorage = (event: StorageEvent) => {
+      if (!event.key || event.key === SETTINGS_KEY) loadLocal();
+    };
+    void loadPublished();
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("storage", handleStorage);
+    };
   }, []);
+
+  useEffect(() => {
+    const href = settings.faviconData || "/favicon.svg";
+    const icon = document.querySelector<HTMLLinkElement>('link[rel="icon"]') ?? document.createElement("link");
+    icon.rel = "icon";
+    icon.href = href;
+    icon.setAttribute("data-wakilon-favicon", "true");
+    if (!icon.parentNode) document.head.appendChild(icon);
+
+    const appleIcon = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]') ?? document.createElement("link");
+    appleIcon.rel = "apple-touch-icon";
+    appleIcon.href = href;
+    appleIcon.setAttribute("data-wakilon-favicon", "true");
+    if (!appleIcon.parentNode) document.head.appendChild(appleIcon);
+  }, [settings.faviconData]);
 
   useEffect(() => {
     const items = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
@@ -750,7 +787,7 @@ export default function SiteClient() {
           <div className="footer-brand"><Brand settings={settings} /><p>Marketing, tráfego e processos de aquisição para advogados que querem crescer com direção.</p></div>
           <div><span className="footer-title">NAVEGAÇÃO</span><a href="#processo">Processo</a><a href="#servicos">Serviços</a><a href="#planos">Planos</a><a href="#sobre">Sobre</a><Link href="/blog/">Blog</Link></div>
           <div><span className="footer-title">CANAIS</span><a href={`mailto:${settings.email}`} data-track-event="generate_lead" data-track-label="E-mail do rodapé">{settings.email}</a><a href={settings.instagram} target="_blank" rel="noreferrer" data-track-event="outbound_click" data-track-label="Instagram">Instagram</a><a href={settings.youtube} target="_blank" rel="noreferrer" data-track-event="outbound_click" data-track-label="YouTube">YouTube</a></div>
-          <div><span className="footer-title">INFORMAÇÕES</span><a href="/privacidade">Política de Privacidade</a><a href="/termos">Termos de Uso</a></div>
+          <div><span className="footer-title">INFORMAÇÕES</span><a href="/privacidade">Política de Privacidade</a><a href="/termos">Termos de Uso</a><CookieSettingsButton /></div>
         </div>
         <div className="container footer-bottom"><span>© 2026 {settings.brandName}. Todos os direitos reservados.</span><span>Desenvolvido com estratégia e propósito.</span></div>
       </footer>

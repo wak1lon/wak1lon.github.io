@@ -3,18 +3,15 @@
 import { ChangeEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  browserLocalPersistence,
-  getRedirectResult,
   GoogleAuthProvider,
   onAuthStateChanged,
-  setPersistence,
   signInWithPopup,
-  signInWithRedirect,
   signOut,
   type User,
 } from "firebase/auth";
 import { firebaseAuth } from "../firebase-client";
 import { Brand, defaultSettings, mergeSiteSettings, SETTINGS_KEY, SiteSettings } from "../site-client";
+import { firebaseSettingsError, loadPublishedSiteSettings, publishSiteSettings } from "../site-settings-store";
 
 type AssetKey = "faviconData" | "logoData" | "heroImageData" | "aboutImageData" | "bannerImageData";
 type AuthState = "loading" | "signed-out" | "authorized";
@@ -64,18 +61,15 @@ function resizeImage(file: File, maxWidth: number, maxHeight: number, quality = 
 
 export default function AdminPage() {
   const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
-  const [status, setStatus] = useState("Alterações salvas somente neste navegador.");
+  const [status, setStatus] = useState("Carregando a versão publicada do site...");
   const [busyAsset, setBusyAsset] = useState<AssetKey | "">("");
+  const [publishing, setPublishing] = useState(false);
   const [authState, setAuthState] = useState<AuthState>("loading");
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [authBusy, setAuthBusy] = useState(false);
   const [authMessage, setAuthMessage] = useState("");
 
   useEffect(() => {
-    void getRedirectResult(firebaseAuth).catch(() => {
-      setAuthMessage("Não foi possível concluir o login. Tente novamente.");
-    });
-
     return onAuthStateChanged(firebaseAuth, (user) => {
       if (!user) {
         setAuthUser(null);
@@ -96,37 +90,61 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
+    if (authState !== "authorized") return;
+    let cancelled = false;
+    const load = async () => {
       try {
+        const published = await loadPublishedSiteSettings();
+        if (cancelled) return;
+        if (published) {
+          setSettings(published);
+          localStorage.setItem(SETTINGS_KEY, JSON.stringify(published));
+          setStatus("Versão publicada carregada. O painel está sincronizado com o site.");
+          return;
+        }
         const saved = localStorage.getItem(SETTINGS_KEY);
         if (saved) setSettings(mergeSiteSettings(JSON.parse(saved)));
-      } catch {
-        setStatus("As configurações salvas não puderam ser carregadas.");
+        setStatus("Ainda não existe uma versão no Firebase. Clique em Publicar alterações para criar.");
+      } catch (error) {
+        if (cancelled) return;
+        try {
+          const saved = localStorage.getItem(SETTINGS_KEY);
+          if (saved) setSettings(mergeSiteSettings(JSON.parse(saved)));
+        } catch {
+          // Mantém os valores originais quando o backup local também não estiver disponível.
+        }
+        setStatus(firebaseSettingsError(error));
       }
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, []);
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, [authState]);
 
   function update<K extends keyof SiteSettings>(key: K, value: SiteSettings[K]) {
     setSettings((current) => ({ ...current, [key]: value }));
     setStatus("Existem alterações ainda não salvas.");
   }
 
-  function save() {
+  async function save() {
+    if (!authUser?.email || publishing) return;
+    setPublishing(true);
+    setStatus("Publicando configurações e imagens no site...");
     try {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+      const published = await publishSiteSettings(settings, authUser.email);
+      setSettings(published);
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(published));
       window.dispatchEvent(new CustomEvent("wakilon:settings-updated"));
-      setStatus("Tudo salvo. Abra a página principal para conferir.");
-    } catch {
-      setStatus("Não foi possível salvar. Reduza o tamanho das imagens e tente novamente.");
+      setStatus("Publicado com sucesso. As mudanças já estão disponíveis para todos os visitantes.");
+    } catch (error) {
+      setStatus(firebaseSettingsError(error));
+    } finally {
+      setPublishing(false);
     }
   }
 
   function restore() {
     setSettings(defaultSettings);
-    localStorage.removeItem(SETTINGS_KEY);
-    window.dispatchEvent(new CustomEvent("wakilon:settings-updated"));
-    setStatus("Configurações originais restauradas.");
+    setStatus("Valores originais preparados. Clique em Publicar alterações para confirmar.");
   }
 
   async function handleAsset(event: ChangeEvent<HTMLInputElement>, key: AssetKey) {
@@ -190,11 +208,6 @@ export default function AdminPage() {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
     try {
-      await setPersistence(firebaseAuth, browserLocalPersistence);
-      if (window.matchMedia("(max-width: 720px)").matches) {
-        await signInWithRedirect(firebaseAuth, provider);
-        return;
-      }
       const result = await signInWithPopup(firebaseAuth, provider);
       if (!isAdmin(result.user)) {
         await signOut(firebaseAuth);
@@ -203,11 +216,15 @@ export default function AdminPage() {
     } catch (error) {
       const code = error && typeof error === "object" && "code" in error ? String(error.code) : "";
       if (code === "auth/popup-blocked") {
-        await signInWithRedirect(firebaseAuth, provider);
-        return;
-      }
-      if (code !== "auth/popup-closed-by-user" && code !== "auth/cancelled-popup-request") {
-        setAuthMessage("Não foi possível entrar com o Google. Confira a configuração do Firebase e tente novamente.");
+        setAuthMessage("O navegador bloqueou a janela do Google. Permita pop-ups para este site e tente novamente.");
+      } else if (code === "auth/unauthorized-domain") {
+        setAuthMessage("Este domínio ainda não está autorizado no Firebase Authentication.");
+      } else if (code === "auth/operation-not-allowed") {
+        setAuthMessage("O login Google ainda não foi ativado no Firebase Authentication.");
+      } else if (code === "auth/network-request-failed") {
+        setAuthMessage("Falha de conexão com o Google. Confira sua internet e tente novamente.");
+      } else if (code !== "auth/popup-closed-by-user" && code !== "auth/cancelled-popup-request") {
+        setAuthMessage("Não foi possível entrar com o Google. Tente novamente.");
       }
     } finally {
       setAuthBusy(false);
@@ -258,7 +275,7 @@ export default function AdminPage() {
         <div className="admin-header-actions">
           <a href="/" target="_blank" rel="noreferrer" className="button button-outline">Ver site</a>
           <a href="/blog/" target="_blank" rel="noreferrer" className="button button-outline">Ver Blog</a>
-          <button type="button" className="button button-primary" onClick={save}>Salvar alterações</button>
+          <button type="button" className="button button-primary" onClick={save} disabled={publishing}>{publishing ? "Publicando..." : "Publicar alterações"}</button>
           <div className="admin-user">
             <span>{authUser?.displayName?.trim().charAt(0).toUpperCase() || "W"}</span>
             <div><b>{authUser?.displayName || "Wakilon Gestor"}</b><small>{authUser?.email}</small></div>
@@ -271,7 +288,7 @@ export default function AdminPage() {
         <aside className="admin-sidebar">
           <span className="section-kicker">PAINEL DE EDIÇÃO</span>
           <h1>Personalize sem alterar o código.</h1>
-          <p>Troque identidade, imagens, contatos, valores e códigos de rastreamento. As mudanças ficam salvas neste navegador.</p>
+          <p>Troque identidade, imagens, contatos, valores e códigos de rastreamento. A publicação sincroniza o domínio oficial e todos os dispositivos.</p>
           <nav>
             <a href="#identidade">01. Identidade</a>
             <a href="#mensagem">02. Mensagem principal</a>
@@ -402,7 +419,7 @@ export default function AdminPage() {
 
           <div className="admin-savebar">
             <span>{status}</span>
-            <button type="button" className="button button-primary" onClick={save}>Salvar alterações</button>
+            <button type="button" className="button button-primary" onClick={save} disabled={publishing}>{publishing ? "Publicando..." : "Publicar alterações"}</button>
           </div>
         </div>
       </div>

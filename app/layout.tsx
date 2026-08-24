@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import CookieConsent from "./cookie-consent";
 import TrackingRuntime from "./tracking-runtime";
 import "./globals.css";
 
@@ -155,18 +156,6 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
-        {/* Google tag (gtag.js) — GA4 principal do site */}
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-L8HFJW94KT" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-L8HFJW94KT');
-            `,
-          }}
-        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
@@ -175,6 +164,7 @@ export default function RootLayout({
       <body>
         <TrackingRuntime />
         {children}
+        <CookieConsent />
       </body>
     </html>
   );

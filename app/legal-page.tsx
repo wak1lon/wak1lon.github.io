@@ -1,4 +1,5 @@
 import Link from "next/link";
+import CookieSettingsButton from "./cookie-settings-button";
 
 type LegalSection = { title: string; content: React.ReactNode };
 
@@ -16,7 +17,7 @@ export default function LegalPage({ kicker, title, intro, sections }: { kicker: 
         {sections.map((section, index) => <section key={section.title}><span>{String(index + 1).padStart(2, "0")}</span><div><h2>{section.title}</h2>{section.content}</div></section>)}
         <div className="legal-contact"><b>Dúvidas ou solicitações?</b><p>Entre em contato pelo e-mail <a href="mailto:contato@wakilongestor.com.br">contato@wakilongestor.com.br</a>.</p></div>
       </article>
-      <footer className="legal-footer"><div className="legal-wrap"><span>© 2026 Wakilon Gestor</span><div><Link href="/privacidade">Privacidade</Link><Link href="/termos">Termos de Uso</Link></div></div></footer>
+      <footer className="legal-footer"><div className="legal-wrap"><span>© 2026 Wakilon Gestor</span><div><Link href="/privacidade">Privacidade</Link><Link href="/termos">Termos de Uso</Link><CookieSettingsButton className="legal-cookie-button" /></div></div></footer>
     </main>
   );
 }

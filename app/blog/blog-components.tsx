@@ -1,4 +1,5 @@
 import Link from "next/link";
+import CookieSettingsButton from "../cookie-settings-button";
 
 export function BlogBrand() {
   return (
@@ -37,7 +38,7 @@ export function BlogFooter() {
       <div className="container blog-footer-grid">
         <div><BlogBrand /><p>Conteúdo sobre gestão, marketing e aquisição responsável para escritórios de advocacia.</p></div>
         <div><b>NAVEGAÇÃO</b><Link href="/">Página inicial</Link><Link href="/blog/">Todos os artigos</Link><Link href="/#planos">Planos</Link></div>
-        <div><b>INFORMAÇÕES</b><a href="/privacidade/">Privacidade</a><a href="/termos/">Termos de uso</a><a href="/painel/" rel="nofollow">Painel de edição</a></div>
+        <div><b>INFORMAÇÕES</b><a href="/privacidade/">Privacidade</a><a href="/termos/">Termos de uso</a><CookieSettingsButton className="blog-cookie-button" /></div>
       </div>
       <div className="container blog-footer-bottom">© 2026 Wakilon Gestor. Conteúdo informativo, sem promessa de resultado.</div>
     </footer>

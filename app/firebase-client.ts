@@ -1,7 +1,9 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyAy1rhV1m5pMCRmigkJ1udLhWh4d313B2o",
   authDomain: "painel-site-wakilon-gestor.firebaseapp.com",
   projectId: "painel-site-wakilon-gestor",
@@ -14,3 +16,5 @@ const firebaseConfig = {
 const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 export const firebaseAuth = getAuth(firebaseApp);
+export const firebaseDb = getFirestore(firebaseApp);
+export const firebaseStorage = getStorage(firebaseApp);
