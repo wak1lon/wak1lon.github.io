@@ -1,11 +1,11 @@
 import { deleteDoc, doc, serverTimestamp, setDoc } from "firebase/firestore";
-import { firebaseConfig, firebaseDb } from "./firebase-client";
+import { firebaseConfig, firebaseDatabaseId, firebaseDb } from "./firebase-client";
 import { mergeSiteSettings, SiteSettings } from "./site-client";
 
 const SETTINGS_DOCUMENT = doc(firebaseDb, "siteSettings", "public");
 const IMAGE_FIELDS = ["faviconData", "socialImageData", "logoData", "heroImageData", "aboutImageData", "bannerImageData"] as const;
-const FIRESTORE_ENDPOINT = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/siteSettings/public?key=${firebaseConfig.apiKey}`;
-const ASSETS_ENDPOINT = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/siteAssets?pageSize=20&key=${firebaseConfig.apiKey}`;
+const FIRESTORE_ENDPOINT = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/${firebaseDatabaseId}/documents/siteSettings/public?key=${firebaseConfig.apiKey}`;
+const ASSETS_ENDPOINT = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/${firebaseDatabaseId}/documents/siteAssets?pageSize=20&key=${firebaseConfig.apiKey}`;
 const MAX_ASSET_CHARACTERS = 820_000;
 
 type PublishStep = "checking" | "uploading" | "saving";
@@ -72,7 +72,7 @@ async function checkFirestoreReady() {
     throw settingsError("unavailable", "Firestore unavailable");
   }
   const payload = await response.text();
-  if (response.status === 404 && /database \(default\) does not exist/i.test(payload)) {
+  if (response.status === 404 && /database .+ does not exist/i.test(payload)) {
     throw settingsError("failed-precondition", "Firestore database does not exist");
   }
   if (response.status === 403) throw settingsError("permission-denied", "Firestore permission denied");
@@ -85,7 +85,7 @@ export async function loadPublishedSiteSettings() {
     fetch(ASSETS_ENDPOINT, { cache: "no-store", signal: AbortSignal.timeout(8_000) }),
   ]);
   const responseText = await response.text();
-  if (response.status === 404 && /database \(default\) does not exist/i.test(responseText)) {
+  if (response.status === 404 && /database .+ does not exist/i.test(responseText)) {
     throw settingsError("failed-precondition", "Firestore database does not exist");
   }
   const assetsText = await assetsResponse.text();

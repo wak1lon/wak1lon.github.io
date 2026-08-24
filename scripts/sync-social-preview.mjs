@@ -1,7 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-const endpoint = "https://firestore.googleapis.com/v1/projects/painel-site-wakilon-gestor/databases/(default)/documents/siteAssets/socialImageData?key=AIzaSyAy1rhV1m5pMCRmigkJ1udLhWh4d313B2o";
+const endpoint = "https://firestore.googleapis.com/v1/projects/painel-site-wakilon-gestor/databases/painelwakilonsite/documents/siteAssets/socialImageData?key=AIzaSyAy1rhV1m5pMCRmigkJ1udLhWh4d313B2o";
 const output = fileURLToPath(new URL("../public/og-share.jpg", import.meta.url));
 
 try {

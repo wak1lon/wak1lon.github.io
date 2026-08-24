@@ -12,7 +12,9 @@ export const firebaseConfig = {
   measurementId: "G-Y5DPN7FXFT",
 };
 
+export const firebaseDatabaseId = "painelwakilonsite";
+
 const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 export const firebaseAuth = getAuth(firebaseApp);
-export const firebaseDb = getFirestore(firebaseApp);
+export const firebaseDb = getFirestore(firebaseApp, firebaseDatabaseId);
