@@ -1,9 +1,40 @@
 "use client";
 
 import { ChangeEvent, useEffect, useState } from "react";
+import Link from "next/link";
+import {
+  browserLocalPersistence,
+  getRedirectResult,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  setPersistence,
+  signInWithPopup,
+  signInWithRedirect,
+  signOut,
+  type User,
+} from "firebase/auth";
+import { firebaseAuth } from "../firebase-client";
 import { Brand, defaultSettings, mergeSiteSettings, SETTINGS_KEY, SiteSettings } from "../site-client";
 
 type AssetKey = "faviconData" | "logoData" | "heroImageData" | "aboutImageData" | "bannerImageData";
+type AuthState = "loading" | "signed-out" | "authorized";
+
+const ADMIN_EMAIL = "wakilongestor@gmail.com";
+
+function isAdmin(user: User | null) {
+  return user?.email?.trim().toLowerCase() === ADMIN_EMAIL;
+}
+
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.19-2.07H12v3.91h5.38a4.6 4.6 0 0 1-1.99 3.02v2.54h3.23c1.89-1.74 2.98-4.3 2.98-7.4Z" />
+      <path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.62-2.42l-3.23-2.5c-.9.6-2.04.96-3.39.96-2.6 0-4.81-1.76-5.6-4.12H3.07v2.58A10 10 0 0 0 12 22Z" />
+      <path fill="#FBBC05" d="M6.4 13.92A6 6 0 0 1 6.09 12c0-.67.12-1.32.31-1.92V7.5H3.07A10 10 0 0 0 2 12c0 1.61.39 3.13 1.07 4.5l3.33-2.58Z" />
+      <path fill="#EA4335" d="M12 5.96c1.47 0 2.78.5 3.82 1.5l2.87-2.87A9.62 9.62 0 0 0 12 2a10 10 0 0 0-8.93 5.5l3.33 2.58c.79-2.36 3-4.12 5.6-4.12Z" />
+    </svg>
+  );
+}
 
 function resizeImage(file: File, maxWidth: number, maxHeight: number, quality = 0.82) {
   return new Promise<string>((resolve, reject) => {
@@ -35,6 +66,34 @@ export default function AdminPage() {
   const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
   const [status, setStatus] = useState("Alterações salvas somente neste navegador.");
   const [busyAsset, setBusyAsset] = useState<AssetKey | "">("");
+  const [authState, setAuthState] = useState<AuthState>("loading");
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authMessage, setAuthMessage] = useState("");
+
+  useEffect(() => {
+    void getRedirectResult(firebaseAuth).catch(() => {
+      setAuthMessage("Não foi possível concluir o login. Tente novamente.");
+    });
+
+    return onAuthStateChanged(firebaseAuth, (user) => {
+      if (!user) {
+        setAuthUser(null);
+        setAuthState("signed-out");
+        return;
+      }
+      if (!isAdmin(user)) {
+        setAuthMessage("Esta conta Google não tem permissão para acessar o painel.");
+        setAuthUser(null);
+        setAuthState("signed-out");
+        void signOut(firebaseAuth);
+        return;
+      }
+      setAuthUser(user);
+      setAuthMessage("");
+      setAuthState("authorized");
+    });
+  }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -125,14 +184,86 @@ export default function AdminPage() {
     event.target.value = "";
   }
 
+  async function loginWithGoogle() {
+    setAuthBusy(true);
+    setAuthMessage("");
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    try {
+      await setPersistence(firebaseAuth, browserLocalPersistence);
+      if (window.matchMedia("(max-width: 720px)").matches) {
+        await signInWithRedirect(firebaseAuth, provider);
+        return;
+      }
+      const result = await signInWithPopup(firebaseAuth, provider);
+      if (!isAdmin(result.user)) {
+        await signOut(firebaseAuth);
+        setAuthMessage("Esta conta Google não tem permissão para acessar o painel.");
+      }
+    } catch (error) {
+      const code = error && typeof error === "object" && "code" in error ? String(error.code) : "";
+      if (code === "auth/popup-blocked") {
+        await signInWithRedirect(firebaseAuth, provider);
+        return;
+      }
+      if (code !== "auth/popup-closed-by-user" && code !== "auth/cancelled-popup-request") {
+        setAuthMessage("Não foi possível entrar com o Google. Confira a configuração do Firebase e tente novamente.");
+      }
+    } finally {
+      setAuthBusy(false);
+    }
+  }
+
+  async function logout() {
+    setAuthBusy(true);
+    try {
+      await signOut(firebaseAuth);
+      setAuthMessage("");
+    } finally {
+      setAuthBusy(false);
+    }
+  }
+
+  if (authState !== "authorized") {
+    return (
+      <main className="admin-auth-page">
+        <div className="admin-auth-ambient" aria-hidden="true"><i /><i /><i /></div>
+        <section className="admin-auth-card" aria-live="polite">
+          <Brand settings={defaultSettings} />
+          <div className="admin-auth-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v11H5V10Z" /><path d="M12 14v3" /></svg>
+          </div>
+          <span className="section-kicker">ACESSO ADMINISTRATIVO</span>
+          <h1>{authState === "loading" ? "Verificando seu acesso..." : "Entre para gerenciar o site."}</h1>
+          <p>{authState === "loading" ? "Aguarde enquanto confirmamos sua sessão segura." : "O painel é exclusivo da conta administradora autorizada."}</p>
+          {authState === "loading" ? (
+            <div className="admin-auth-loading"><i /><span>Conectando ao Firebase</span></div>
+          ) : (
+            <button type="button" className="google-login-button" onClick={loginWithGoogle} disabled={authBusy}>
+              <GoogleIcon />{authBusy ? "ABRINDO O GOOGLE..." : "ENTRAR COM GOOGLE"}
+            </button>
+          )}
+          {authMessage && <div className="admin-auth-error" role="alert">{authMessage}</div>}
+          <small>Conta autorizada: {ADMIN_EMAIL}</small>
+          <Link href="/">← Voltar ao site</Link>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="admin-page">
       <header className="admin-header">
         <Brand settings={settings} />
-        <div>
+        <div className="admin-header-actions">
           <a href="/" target="_blank" rel="noreferrer" className="button button-outline">Ver site</a>
           <a href="/blog/" target="_blank" rel="noreferrer" className="button button-outline">Ver Blog</a>
           <button type="button" className="button button-primary" onClick={save}>Salvar alterações</button>
+          <div className="admin-user">
+            <span>{authUser?.displayName?.trim().charAt(0).toUpperCase() || "W"}</span>
+            <div><b>{authUser?.displayName || "Wakilon Gestor"}</b><small>{authUser?.email}</small></div>
+            <button type="button" onClick={logout} disabled={authBusy}>Sair</button>
+          </div>
         </div>
       </header>
 

@@ -766,6 +766,32 @@ svg { width: 20px; height: 20px; }
 }
 
 /* Painel de edição */
+.admin-auth-page { position: relative; min-height: 100vh; display: grid; place-items: center; overflow: hidden; padding: 32px 20px; color: var(--white); background: radial-gradient(circle at 75% 18%,rgba(8,125,240,.28),transparent 31%),radial-gradient(circle at 15% 86%,rgba(52,216,255,.1),transparent 27%),linear-gradient(145deg,#020918,#061a3b 58%,#031126); }
+.admin-auth-page::before { content: ""; position: absolute; inset: 0; opacity: .48; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px); background-size: 42px 42px; -webkit-mask-image: radial-gradient(circle at center,black,transparent 78%); mask-image: radial-gradient(circle at center,black,transparent 78%); }
+.admin-auth-ambient { position: absolute; inset: 0; pointer-events: none; }
+.admin-auth-ambient i { position: absolute; display: block; border: 1px solid rgba(52,216,255,.13); border-radius: 50%; }
+.admin-auth-ambient i:nth-child(1) { width: 520px; height: 520px; right: -220px; top: -210px; box-shadow: 0 0 90px rgba(8,125,240,.12); }
+.admin-auth-ambient i:nth-child(2) { width: 330px; height: 330px; left: -155px; bottom: -145px; border-style: dashed; animation: rotate-slow 28s linear infinite; }
+.admin-auth-ambient i:nth-child(3) { width: 7px; height: 7px; left: 17%; top: 24%; border: 0; background: var(--cyan-400); box-shadow: 0 0 20px var(--cyan-400); animation: float-y 4s ease-in-out infinite; }
+.admin-auth-card { position: relative; z-index: 1; width: min(100%,470px); display: flex; flex-direction: column; align-items: center; padding: 42px; overflow: hidden; border: 1px solid rgba(125,211,255,.23); border-radius: 27px; text-align: center; background: linear-gradient(155deg,rgba(11,38,78,.88),rgba(3,15,38,.92)); box-shadow: 0 38px 100px rgba(0,5,18,.48),inset 0 1px rgba(255,255,255,.08); backdrop-filter: blur(18px); }
+.admin-auth-card::after { content: ""; position: absolute; width: 230px; height: 230px; right: -140px; top: -145px; border-radius: 50%; background: radial-gradient(circle,rgba(52,216,255,.18),transparent 68%); pointer-events: none; }
+.admin-auth-card .brand-wordmark { align-self: flex-start; }
+.admin-auth-mark { width: 66px; height: 66px; display: grid; place-items: center; margin: 39px 0 23px; border: 1px solid rgba(52,216,255,.34); border-radius: 20px; color: var(--cyan-400); background: linear-gradient(145deg,rgba(52,216,255,.13),rgba(8,125,240,.06)); box-shadow: inset 0 0 25px rgba(52,216,255,.08),0 14px 32px rgba(0,7,22,.28); }
+.admin-auth-mark svg { width: 29px; height: 29px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.admin-auth-card h1 { max-width: 360px; margin: 13px 0 12px; font-size: 35px; line-height: 1.06; letter-spacing: -.045em; }
+.admin-auth-card > p { max-width: 330px; margin: 0; color: rgba(224,239,255,.62); font-size: 12px; line-height: 1.65; }
+.google-login-button { width: 100%; min-height: 54px; display: flex; align-items: center; justify-content: center; gap: 13px; margin-top: 27px; border: 1px solid rgba(255,255,255,.83); border-radius: 12px; color: #1b2a3a; background: var(--white); box-shadow: 0 15px 35px rgba(0,5,18,.28); cursor: pointer; font-size: 11px; font-weight: 850; letter-spacing: .04em; transition: transform .25s ease,box-shadow .25s ease,background .25s ease; }
+.google-login-button:hover { transform: translateY(-3px); background: #f5faff; box-shadow: 0 20px 45px rgba(0,5,18,.38),0 0 0 4px rgba(52,216,255,.07); }
+.google-login-button:disabled { cursor: wait; opacity: .72; transform: none; }
+.google-login-button svg { width: 21px; height: 21px; flex: 0 0 21px; }
+.admin-auth-loading { min-height: 54px; display: flex; align-items: center; justify-content: center; gap: 11px; margin-top: 27px; color: rgba(222,239,255,.62); font-size: 10px; }
+.admin-auth-loading i { width: 17px; height: 17px; border: 2px solid rgba(52,216,255,.2); border-top-color: var(--cyan-400); border-radius: 50%; animation: auth-spin .8s linear infinite; }
+.admin-auth-error { width: 100%; margin-top: 14px; padding: 12px 13px; border: 1px solid rgba(255,151,151,.24); border-radius: 10px; color: #ffd1d1; background: rgba(172,38,56,.12); font-size: 10px; line-height: 1.5; }
+.admin-auth-card > small { margin-top: 18px; color: rgba(221,239,255,.38); font-size: 8px; }
+.admin-auth-card > a { margin-top: 20px; color: rgba(222,239,255,.6); font-size: 10px; font-weight: 700; }
+.admin-auth-card > a:hover { color: var(--cyan-400); }
+@keyframes auth-spin { to { transform: rotate(360deg); } }
+
 .admin-page { min-height: 100vh; color: var(--ink); background: #edf3f9; }
 .admin-header {
   position: sticky;
@@ -782,8 +808,16 @@ svg { width: 20px; height: 20px; }
   backdrop-filter: blur(16px);
 }
 .admin-header > div { display: flex; gap: 10px; }
+.admin-header-actions { align-items: center; }
 .admin-header .button { min-height: 43px; }
 .admin-header .button-outline { border-color: rgba(255,255,255,.18); color: var(--white); background: rgba(255,255,255,.05); }
+.admin-user { min-height: 45px; display: grid; grid-template-columns: 29px minmax(0,1fr) auto; gap: 9px; align-items: center; margin-left: 3px; padding: 5px 7px 5px 6px; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; color: var(--white); background: rgba(255,255,255,.045); }
+.admin-user > span { width: 29px; height: 29px; display: grid; place-items: center; border: 1px solid rgba(52,216,255,.3); border-radius: 9px; color: var(--cyan-400); background: rgba(52,216,255,.08); font-size: 11px; font-weight: 900; }
+.admin-user > div { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.admin-user b { max-width: 125px; overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.admin-user small { max-width: 145px; overflow: hidden; color: rgba(224,239,255,.45); font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
+.admin-user button { padding: 7px 8px; border: 0; border-left: 1px solid rgba(255,255,255,.1); color: rgba(231,243,255,.66); background: transparent; cursor: pointer; font-size: 8px; font-weight: 800; }
+.admin-user button:hover { color: var(--cyan-400); }
 .admin-layout { width: min(calc(100% - 40px),1320px); display: grid; grid-template-columns: 290px minmax(0,1fr); gap: 30px; margin: 30px auto 80px; }
 .admin-sidebar { position: sticky; top: 103px; height: fit-content; padding: 27px; border: 1px solid #d8e3ef; border-radius: 20px; background: var(--white); box-shadow: 0 20px 45px rgba(15,49,86,.08); }
 .admin-sidebar h1 { margin: 14px 0 12px; font-size: 27px; line-height: 1.08; letter-spacing: -.04em; }
@@ -879,6 +913,9 @@ svg { width: 20px; height: 20px; }
 .legal-footer a:hover { color: var(--cyan-400); }
 
 @media (max-width: 900px) {
+  .admin-header { flex-wrap: wrap; }
+  .admin-header-actions { flex: 1; justify-content: flex-end; }
+  .admin-user > div { display: none; }
   .admin-layout { grid-template-columns: 1fr; }
   .admin-sidebar { position: static; }
   .admin-sidebar nav { grid-template-columns: repeat(3,1fr); }
@@ -889,10 +926,19 @@ svg { width: 20px; height: 20px; }
 }
 
 @media (max-width: 600px) {
-  .admin-header { align-items: flex-start; padding: 14px 16px; }
+  .admin-auth-card { padding: 29px 21px; border-radius: 21px; }
+  .admin-auth-card .brand-wordmark { align-self: center; }
+  .admin-auth-mark { margin-top: 30px; }
+  .admin-auth-card h1 { font-size: 31px; }
+  .admin-header { align-items: center; padding: 12px 14px; }
   .admin-header .brand-wordmark > span:last-child { display: none; }
   .admin-header > div { flex: 1; }
-  .admin-header .button { flex: 1; padding-inline: 8px; font-size: 9px; }
+  .admin-header-actions { gap: 6px; }
+  .admin-header-actions > a:nth-of-type(2) { display: none; }
+  .admin-header .button { min-height: 40px; flex: 1; padding-inline: 7px; font-size: 8px; }
+  .admin-user { min-height: 40px; grid-template-columns: 27px auto; gap: 4px; padding: 4px; }
+  .admin-user > span { width: 27px; height: 27px; }
+  .admin-user button { padding: 6px; }
   .admin-layout { width: calc(100% - 24px); margin-top: 14px; }
   .admin-sidebar,.admin-card { padding: 22px 18px; border-radius: 16px; }
   .admin-sidebar nav { grid-template-columns: 1fr 1fr; }
