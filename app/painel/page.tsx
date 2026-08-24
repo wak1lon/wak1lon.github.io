@@ -13,13 +13,17 @@ import { firebaseAuth } from "../firebase-client";
 import { Brand, defaultSettings, mergeSiteSettings, SETTINGS_KEY, SiteSettings } from "../site-client";
 import { firebaseSettingsError, loadPublishedSiteSettings, publishSiteSettings } from "../site-settings-store";
 
-type AssetKey = "faviconData" | "logoData" | "heroImageData" | "aboutImageData" | "bannerImageData";
+type AssetKey = "faviconData" | "socialImageData" | "logoData" | "heroImageData" | "aboutImageData" | "bannerImageData";
 type AuthState = "loading" | "signed-out" | "authorized";
 
-const ADMIN_EMAIL = "wakilongestor@gmail.com";
+const ADMIN_EMAIL_HASH = "ebe98fd692898c24bc727c30be38fcbf96ea1107256cb2e9ee3f02207c42d4cb";
 
-function isAdmin(user: User | null) {
-  return user?.email?.trim().toLowerCase() === ADMIN_EMAIL;
+async function isAdmin(user: User | null) {
+  const email = user?.email?.trim().toLowerCase();
+  if (!email) return false;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(email));
+  const hash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return hash === ADMIN_EMAIL_HASH;
 }
 
 function GoogleIcon() {
@@ -33,7 +37,7 @@ function GoogleIcon() {
   );
 }
 
-function resizeImage(file: File, maxWidth: number, maxHeight: number, quality = 0.82) {
+function resizeImage(file: File, maxWidth: number, maxHeight: number, quality = 0.82, crop = false, forceJpeg = false) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error("Não foi possível ler a imagem."));
@@ -41,17 +45,35 @@ function resizeImage(file: File, maxWidth: number, maxHeight: number, quality = 
       const image = new Image();
       image.onerror = () => reject(new Error("Formato de imagem inválido."));
       image.onload = () => {
-        const ratio = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
+        const ratio = crop
+          ? Math.max(maxWidth / image.width, maxHeight / image.height)
+          : Math.min(maxWidth / image.width, maxHeight / image.height, 1);
         const canvas = document.createElement("canvas");
-        canvas.width = Math.max(1, Math.round(image.width * ratio));
-        canvas.height = Math.max(1, Math.round(image.height * ratio));
+        canvas.width = crop ? maxWidth : Math.max(1, Math.round(image.width * ratio));
+        canvas.height = crop ? maxHeight : Math.max(1, Math.round(image.height * ratio));
         const context = canvas.getContext("2d");
         if (!context) return reject(new Error("Seu navegador não permitiu processar a imagem."));
         context.imageSmoothingEnabled = true;
         context.imageSmoothingQuality = "high";
-        context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        const usePng = file.type === "image/png" && file.size < 700_000;
-        resolve(canvas.toDataURL(usePng ? "image/png" : "image/webp", quality));
+        const drawWidth = image.width * ratio;
+        const drawHeight = image.height * ratio;
+        context.drawImage(image, (canvas.width - drawWidth) / 2, (canvas.height - drawHeight) / 2, drawWidth, drawHeight);
+        const maxCharacters = 760_000;
+        const usePng = !forceJpeg && file.type === "image/png" && file.size < 450_000;
+        let outputType = forceJpeg ? "image/jpeg" : usePng ? "image/png" : "image/webp";
+        let outputQuality = quality;
+        let result = canvas.toDataURL(outputType, outputQuality);
+        if (result.length > maxCharacters && outputType === "image/png") {
+          outputType = "image/webp";
+          outputQuality = Math.min(quality, 0.82);
+          result = canvas.toDataURL(outputType, outputQuality);
+        }
+        while (result.length > maxCharacters && outputQuality > 0.46) {
+          outputQuality -= 0.08;
+          result = canvas.toDataURL(outputType, outputQuality);
+        }
+        if (result.length > maxCharacters) return reject(new Error("A imagem continua muito pesada. Use uma imagem menor."));
+        resolve(result);
       };
       image.src = String(reader.result);
     };
@@ -70,23 +92,32 @@ export default function AdminPage() {
   const [authMessage, setAuthMessage] = useState("");
 
   useEffect(() => {
-    return onAuthStateChanged(firebaseAuth, (user) => {
-      if (!user) {
-        setAuthUser(null);
-        setAuthState("signed-out");
-        return;
-      }
-      if (!isAdmin(user)) {
-        setAuthMessage("Esta conta Google não tem permissão para acessar o painel.");
-        setAuthUser(null);
-        setAuthState("signed-out");
-        void signOut(firebaseAuth);
-        return;
-      }
-      setAuthUser(user);
-      setAuthMessage("");
-      setAuthState("authorized");
+    let active = true;
+    const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
+      void (async () => {
+        if (!user) {
+          setAuthUser(null);
+          setAuthState("signed-out");
+          return;
+        }
+        if (!(await isAdmin(user))) {
+          if (!active) return;
+          setAuthMessage("Esta conta Google não tem permissão para acessar o painel.");
+          setAuthUser(null);
+          setAuthState("signed-out");
+          void signOut(firebaseAuth);
+          return;
+        }
+        if (!active) return;
+        setAuthUser(user);
+        setAuthMessage("");
+        setAuthState("authorized");
+      })();
     });
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -128,15 +159,20 @@ export default function AdminPage() {
   async function save() {
     if (!authUser?.email || publishing) return;
     setPublishing(true);
-    setStatus("Publicando configurações e imagens no site...");
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    setStatus("Verificando a conexão de publicação...");
     try {
-      const published = await publishSiteSettings(settings, authUser.email);
+      const published = await publishSiteSettings(settings, (step) => {
+        if (step === "checking") setStatus("Verificando o banco de dados...");
+        if (step === "uploading") setStatus("Compactando e salvando as imagens sem serviço pago...");
+        if (step === "saving") setStatus("Salvando e sincronizando computador e celular...");
+      });
       setSettings(published);
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(published));
       window.dispatchEvent(new CustomEvent("wakilon:settings-updated"));
       setStatus("Publicado com sucesso. As mudanças já estão disponíveis para todos os visitantes.");
     } catch (error) {
-      setStatus(firebaseSettingsError(error));
+      setStatus(`${firebaseSettingsError(error)} Seu rascunho ficou salvo neste dispositivo.`);
     } finally {
       setPublishing(false);
     }
@@ -158,14 +194,24 @@ export default function AdminPage() {
     try {
       const dimensions = key === "faviconData"
         ? { width: 256, height: 256, quality: 0.92 }
+        : key === "socialImageData"
+          ? { width: 1200, height: 630, quality: 0.9 }
         : key === "logoData"
           ? { width: 700, height: 400, quality: 0.9 }
           : key === "bannerImageData"
             ? { width: 1800, height: 850, quality: 0.82 }
             : { width: 1600, height: 1100, quality: 0.8 };
-      const data = await resizeImage(file, dimensions.width, dimensions.height, dimensions.quality);
+      const data = await resizeImage(file, dimensions.width, dimensions.height, dimensions.quality, key === "socialImageData", key === "socialImageData");
       update(key, data);
-      setStatus("Imagem pronta. Clique em Salvar alterações.");
+      if (key === "faviconData") {
+        update("faviconVersion", String(Date.now()));
+        setStatus("Favicon pronto. Publique para atualizar o ícone da aba e da URL do site.");
+      } else if (key === "socialImageData") {
+        update("socialImageVersion", String(Date.now()));
+        setStatus("Imagem do link pronta. Clique em Publicar alterações.");
+      } else {
+        setStatus("Imagem pronta. Clique em Publicar alterações.");
+      }
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Não foi possível processar a imagem.");
     } finally {
@@ -209,7 +255,7 @@ export default function AdminPage() {
     provider.setCustomParameters({ prompt: "select_account" });
     try {
       const result = await signInWithPopup(firebaseAuth, provider);
-      if (!isAdmin(result.user)) {
+      if (!(await isAdmin(result.user))) {
         await signOut(firebaseAuth);
         setAuthMessage("Esta conta Google não tem permissão para acessar o painel.");
       }
@@ -261,7 +307,7 @@ export default function AdminPage() {
             </button>
           )}
           {authMessage && <div className="admin-auth-error" role="alert">{authMessage}</div>}
-          <small>Conta autorizada: {ADMIN_EMAIL}</small>
+          <small>Acesso restrito à conta administradora configurada no Firebase.</small>
           <Link href="/">← Voltar ao site</Link>
         </section>
       </main>
@@ -306,7 +352,8 @@ export default function AdminPage() {
             <div className="admin-card-head"><span>01</span><div><h2>Identidade e imagens</h2><p>Favicon, logo, fundo principal e imagem do bloco sobre.</p></div></div>
             <label className="field-label">Nome da marca<input value={settings.brandName} onChange={(event) => update("brandName", event.target.value)} /></label>
             <div className="asset-grid">
-              <AssetUpload title="Favicon" hint="Ícone quadrado, preferencialmente PNG" value={settings.faviconData} busy={busyAsset === "faviconData"} onChange={(event) => handleAsset(event, "faviconData")} onRemove={() => update("faviconData", "")} />
+              <AssetUpload title="Favicon" hint="PNG quadrado, ideal 256 × 256 px. Aparece na aba e junto à URL." value={settings.faviconData} busy={busyAsset === "faviconData"} onChange={(event) => handleAsset(event, "faviconData")} onRemove={() => { update("faviconData", ""); update("faviconVersion", String(Date.now())); }} />
+              <AssetUpload title="Imagem do link" hint="Imagem horizontal 1200 × 630 px para WhatsApp, Facebook e outras redes." value={settings.socialImageData} busy={busyAsset === "socialImageData"} onChange={(event) => handleAsset(event, "socialImageData")} onRemove={() => { update("socialImageData", ""); update("socialImageVersion", String(Date.now())); }} wide />
               <AssetUpload title="Logomarca" hint="PNG ou WebP transparente" value={settings.logoData} busy={busyAsset === "logoData"} onChange={(event) => handleAsset(event, "logoData")} onRemove={() => update("logoData", "")} />
               <AssetUpload title="Fundo da abertura" hint="Imagem horizontal" value={settings.heroImageData} busy={busyAsset === "heroImageData"} onChange={(event) => handleAsset(event, "heroImageData")} onRemove={() => update("heroImageData", "")} />
               <AssetUpload title="Foto do bloco sobre" hint="Retrato ou foto profissional" value={settings.aboutImageData} busy={busyAsset === "aboutImageData"} onChange={(event) => handleAsset(event, "aboutImageData")} onRemove={() => update("aboutImageData", "")} />
@@ -427,9 +474,9 @@ export default function AdminPage() {
   );
 }
 
-function AssetUpload({ title, hint, value, busy, onChange, onRemove }: { title: string; hint: string; value: string; busy: boolean; onChange: (event: ChangeEvent<HTMLInputElement>) => void; onRemove: () => void }) {
+function AssetUpload({ title, hint, value, busy, onChange, onRemove, wide = false }: { title: string; hint: string; value: string; busy: boolean; onChange: (event: ChangeEvent<HTMLInputElement>) => void; onRemove: () => void; wide?: boolean }) {
   return (
-    <div className="asset-upload">
+    <div className={wide ? "asset-upload asset-upload-wide" : "asset-upload"}>
       <div className="asset-preview" style={value ? { backgroundImage: `url(${value})` } : undefined}>
         {!value && <span>SEM IMAGEM</span>}
       </div>

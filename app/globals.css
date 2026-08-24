@@ -914,6 +914,8 @@ svg { width: 20px; height: 20px; }
 .switch-row input:focus-visible + i { box-shadow: 0 0 0 3px rgba(8,125,240,.16); }
 .asset-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 13px; }
 .asset-upload { display: grid; gap: 10px; padding: 13px; border: 1px solid #dce6ef; border-radius: 14px; background: #f8fbfe; }
+.asset-upload-wide { grid-column: span 2; }
+.asset-upload-wide .asset-preview { min-height: 180px; aspect-ratio: 1200/630; }
 .asset-preview { min-height: 135px; display: grid; place-items: center; border: 1px dashed #c9d8e7; border-radius: 10px; color: #9aa9b8; background: #eaf1f7 center/cover no-repeat; font-size: 9px; font-weight: 850; letter-spacing: .1em; }
 .asset-upload > div:nth-child(2) { display: flex; flex-direction: column; gap: 4px; }
 .asset-upload b { font-size: 11px; }
@@ -967,6 +969,7 @@ svg { width: 20px; height: 20px; }
   .admin-sidebar { position: static; }
   .admin-sidebar nav { grid-template-columns: repeat(3,1fr); }
   .asset-grid { grid-template-columns: 1fr 1fr; }
+  .asset-upload-wide { grid-column: 1/-1; }
   .event-map { grid-template-columns: repeat(2,1fr); }
   .three-fields { grid-template-columns: 1fr 1fr; }
   .banner-editor-grid { grid-template-columns: 1fr; }
@@ -1003,6 +1006,7 @@ svg { width: 20px; height: 20px; }
   .admin-sidebar,.admin-card { padding: 22px 18px; border-radius: 16px; }
   .admin-sidebar nav { grid-template-columns: 1fr 1fr; }
   .form-grid,.three-fields,.asset-grid { grid-template-columns: 1fr; }
+  .asset-upload-wide { grid-column: auto; }
   .banner-editor-grid { grid-template-columns: 1fr; }
   .integration-status,.event-map { grid-template-columns: 1fr; }
   .asset-preview { min-height: 180px; }
