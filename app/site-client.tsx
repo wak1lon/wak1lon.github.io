@@ -17,6 +17,8 @@ export type SiteSettings = {
   youtube: string;
   faviconData: string;
   faviconVersion: string;
+  socialImageData: string;
+  socialImageVersion: string;
   logoData: string;
   heroImageData: string;
   aboutImageData: string;
@@ -55,6 +57,8 @@ export const defaultSettings: SiteSettings = {
   youtube: "https://youtube.com/@wakilongestor",
   faviconData: "",
   faviconVersion: "",
+  socialImageData: "",
+  socialImageVersion: "",
   logoData: "",
   heroImageData: "",
   aboutImageData: "",
@@ -308,6 +312,7 @@ export default function SiteClient() {
         if (!published || cancelled) return;
         setSettings(published);
         window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(published));
+        window.dispatchEvent(new CustomEvent("wakilon:settings-updated"));
       } catch {
         // O conteúdo padrão/local mantém o site utilizável se o Firebase estiver indisponível.
       }
@@ -315,11 +320,18 @@ export default function SiteClient() {
     const handleStorage = (event: StorageEvent) => {
       if (!event.key || event.key === SETTINGS_KEY) loadLocal();
     };
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") void loadPublished();
+    };
+    const syncTimer = window.setInterval(() => { void loadPublished(); }, 60_000);
     void loadPublished();
     window.addEventListener("storage", handleStorage);
+    document.addEventListener("visibilitychange", handleVisibility);
     return () => {
       cancelled = true;
+      window.clearInterval(syncTimer);
       window.removeEventListener("storage", handleStorage);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, []);
 

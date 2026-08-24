@@ -42,13 +42,13 @@ export const metadata: Metadata = {
     siteName: "Wakilon Gestor",
     title: "Gestão de Tráfego para Advogados | Wakilon Gestor",
     description: "Meta Ads, Google Ads, campanhas para WhatsApp, landing pages, funil e rastreamento para advogados.",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Wakilon Gestor — Marketing para Advogados" }],
+    images: [{ url: "/og-share.jpg", width: 1200, height: 630, alt: "Wakilon Gestor — Marketing para Advogados" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Gestão de Tráfego para Advogados | Wakilon Gestor",
     description: "Meta Ads, Google Ads, campanhas para WhatsApp, landing pages, funil e rastreamento.",
-    images: ["/og.png"],
+    images: ["/og-share.jpg"],
   },
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
 };

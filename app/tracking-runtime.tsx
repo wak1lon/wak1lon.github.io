@@ -51,6 +51,27 @@ function applyFavicon(source: string, version: string) {
   });
 }
 
+function absoluteAssetHref(source: string, version: string, fallbackPath: string) {
+  if (!source || source.startsWith("data:image/")) return new URL(fallbackPath, window.location.origin).href;
+  const token = version || "site-default-v1";
+  return `${source}${source.includes("?") ? "&" : "?"}wakilon-asset=${encodeURIComponent(token)}`;
+}
+
+function setMeta(selector: string, attribute: "name" | "property", key: string, content: string) {
+  const meta = document.querySelector<HTMLMetaElement>(selector) ?? document.createElement("meta");
+  meta.setAttribute(attribute, key);
+  meta.content = content;
+  if (!meta.parentNode) document.head.appendChild(meta);
+}
+
+function applySocialPreview(source: string, version: string) {
+  const href = absoluteAssetHref(source, version, "/og.png");
+  setMeta('meta[property="og:image"]', "property", "og:image", href);
+  setMeta('meta[property="og:image:url"]', "property", "og:image:url", href);
+  setMeta('meta[property="og:image:secure_url"]', "property", "og:image:secure_url", href);
+  setMeta('meta[name="twitter:image"]', "name", "twitter:image", href);
+}
+
 function removeSnippet(key: string) {
   document.querySelectorAll(`[data-wakilon-snippet="${key}"]`).forEach((node) => node.remove());
 }
@@ -124,6 +145,7 @@ function expireTrackingCookies() {
 
 function applyIntegrations(preferences = readCookiePreferences()) {
   applyFavicon(activeSettings.faviconData, activeSettings.faviconVersion);
+  applySocialPreview(activeSettings.socialImageData, activeSettings.socialImageVersion);
   if (window.location.pathname.startsWith("/painel")) return;
 
   applyGoogleConsent(preferences, "update");
@@ -156,6 +178,7 @@ function applyIntegrations(preferences = readCookiePreferences()) {
 async function refreshPublishedSettings() {
   activeSettings = readLocalSettings();
   applyFavicon(activeSettings.faviconData, activeSettings.faviconVersion);
+  applySocialPreview(activeSettings.socialImageData, activeSettings.socialImageVersion);
   try {
     const { loadPublishedSiteSettings } = await import("./site-settings-store");
     const published = await loadPublishedSiteSettings();

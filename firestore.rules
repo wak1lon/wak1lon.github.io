@@ -13,6 +13,14 @@ service cloud.firestore {
       allow create, update, delete: if isSiteAdministrator();
     }
 
+    match /siteAssets/{assetId} {
+      allow read: if true;
+      allow create, update: if isSiteAdministrator()
+        && request.resource.data.data is string
+        && request.resource.data.data.size() < 820000;
+      allow delete: if isSiteAdministrator();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
