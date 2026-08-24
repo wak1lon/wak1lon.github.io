@@ -16,6 +16,7 @@ export type SiteSettings = {
   instagram: string;
   youtube: string;
   faviconData: string;
+  faviconVersion: string;
   logoData: string;
   heroImageData: string;
   aboutImageData: string;
@@ -53,6 +54,7 @@ export const defaultSettings: SiteSettings = {
   instagram: "https://instagram.com/wakilongestor",
   youtube: "https://youtube.com/@wakilongestor",
   faviconData: "",
+  faviconVersion: "",
   logoData: "",
   heroImageData: "",
   aboutImageData: "",
@@ -320,21 +322,6 @@ export default function SiteClient() {
       window.removeEventListener("storage", handleStorage);
     };
   }, []);
-
-  useEffect(() => {
-    const href = settings.faviconData || "/favicon.svg";
-    const icon = document.querySelector<HTMLLinkElement>('link[rel="icon"]') ?? document.createElement("link");
-    icon.rel = "icon";
-    icon.href = href;
-    icon.setAttribute("data-wakilon-favicon", "true");
-    if (!icon.parentNode) document.head.appendChild(icon);
-
-    const appleIcon = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]') ?? document.createElement("link");
-    appleIcon.rel = "apple-touch-icon";
-    appleIcon.href = href;
-    appleIcon.setAttribute("data-wakilon-favicon", "true");
-    if (!appleIcon.parentNode) document.head.appendChild(appleIcon);
-  }, [settings.faviconData]);
 
   useEffect(() => {
     const items = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));

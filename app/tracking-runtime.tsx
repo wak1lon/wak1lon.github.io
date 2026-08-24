@@ -28,19 +28,27 @@ function readLocalSettings(): SiteSettings {
   }
 }
 
-function applyFavicon(dataUrl: string) {
-  const href = dataUrl || "/favicon.svg";
-  const icon = document.querySelector<HTMLLinkElement>('link[rel="icon"]') ?? document.createElement("link");
-  icon.rel = "icon";
-  icon.href = href;
-  icon.setAttribute("data-wakilon-favicon", "true");
-  if (!icon.parentNode) document.head.appendChild(icon);
+function faviconHref(source: string, version: string) {
+  const href = source || "/favicon.svg";
+  if (href.startsWith("data:image/")) return href;
+  const token = version || "site-default-v1";
+  return `${href}${href.includes("?") ? "&" : "?"}wakilon-favicon=${encodeURIComponent(token)}`;
+}
 
-  const apple = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]') ?? document.createElement("link");
-  apple.rel = "apple-touch-icon";
-  apple.href = href;
-  apple.setAttribute("data-wakilon-favicon", "true");
-  if (!apple.parentNode) document.head.appendChild(apple);
+function applyFavicon(source: string, version: string) {
+  const href = faviconHref(source, version);
+
+  document
+    .querySelectorAll<HTMLLinkElement>('link[rel="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]')
+    .forEach((link) => link.remove());
+
+  (["icon", "shortcut icon", "apple-touch-icon"] as const).forEach((rel) => {
+    const link = document.createElement("link");
+    link.rel = rel;
+    link.href = href;
+    link.setAttribute("data-wakilon-favicon", "true");
+    document.head.appendChild(link);
+  });
 }
 
 function removeSnippet(key: string) {
@@ -115,7 +123,7 @@ function expireTrackingCookies() {
 }
 
 function applyIntegrations(preferences = readCookiePreferences()) {
-  applyFavicon(activeSettings.faviconData);
+  applyFavicon(activeSettings.faviconData, activeSettings.faviconVersion);
   if (window.location.pathname.startsWith("/painel")) return;
 
   applyGoogleConsent(preferences, "update");
@@ -147,7 +155,7 @@ function applyIntegrations(preferences = readCookiePreferences()) {
 
 async function refreshPublishedSettings() {
   activeSettings = readLocalSettings();
-  applyFavicon(activeSettings.faviconData);
+  applyFavicon(activeSettings.faviconData, activeSettings.faviconVersion);
   try {
     const { loadPublishedSiteSettings } = await import("./site-settings-store");
     const published = await loadPublishedSiteSettings();

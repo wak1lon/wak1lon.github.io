@@ -31,6 +31,7 @@ async function uploadEditableImages(settings: SiteSettings) {
       customMetadata: { managedBy: "wakilon-site-panel" },
     });
     published[field] = await getDownloadURL(objectRef);
+    if (field === "faviconData") published.faviconVersion = String(Date.now());
   }));
 
   return published;
