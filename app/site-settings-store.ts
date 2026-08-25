@@ -5,10 +5,19 @@ import { mergeSiteSettings, SiteSettings } from "./site-client";
 const SETTINGS_DOCUMENT = doc(firebaseDb, "siteSettings", "public");
 const IMAGE_FIELDS = ["faviconData", "socialImageData", "logoData", "heroImageData", "aboutImageData", "bannerImageData"] as const;
 const FIRESTORE_ENDPOINT = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/${firebaseDatabaseId}/documents/siteSettings/public?key=${firebaseConfig.apiKey}`;
-const ASSETS_ENDPOINT = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/${firebaseDatabaseId}/documents/siteAssets?pageSize=20&key=${firebaseConfig.apiKey}`;
 const MAX_ASSET_CHARACTERS = 820_000;
 
+type ImageField = (typeof IMAGE_FIELDS)[number];
 type PublishStep = "checking" | "uploading" | "saving";
+
+type RestField = {
+  stringValue?: string;
+  booleanValue?: boolean;
+};
+
+type RestDocument = {
+  fields?: Record<string, RestField>;
+};
 
 function settingsError(code: string, message: string) {
   const error = new Error(message) as Error & { code?: string };
@@ -30,6 +39,30 @@ function isInlineImage(value: string) {
   return value.startsWith("data:image/");
 }
 
+function assetEndpoint(field: ImageField) {
+  return `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/${firebaseDatabaseId}/documents/siteAssets/${field}?key=${firebaseConfig.apiKey}`;
+}
+
+async function readPublishedAsset(field: ImageField) {
+  try {
+    const response = await fetch(assetEndpoint(field), {
+      cache: "no-store",
+      signal: AbortSignal.timeout(12_000),
+    });
+    if (response.status === 404) return null;
+    if (!response.ok) return null;
+
+    const payload = await response.json() as RestDocument;
+    const data = payload.fields?.data?.stringValue;
+    const version = payload.fields?.version?.stringValue;
+
+    if (!data?.startsWith("data:image/") || data.length > MAX_ASSET_CHARACTERS) return null;
+    return { field, data, version: version || "" };
+  } catch {
+    return null;
+  }
+}
+
 async function saveEditableImages(settings: SiteSettings) {
   const published = { ...settings };
   const persisted = { ...settings };
@@ -37,19 +70,25 @@ async function saveEditableImages(settings: SiteSettings) {
   await Promise.all(IMAGE_FIELDS.map(async (field) => {
     const value = settings[field];
     const assetDocument = doc(firebaseDb, "siteAssets", field);
+
     if (!value) {
       await withTimeout(deleteDoc(assetDocument), 12_000, "deadline-exceeded");
       persisted[field] = "";
       return;
     }
+
     if (!isInlineImage(value)) return;
-    if (value.length > MAX_ASSET_CHARACTERS) throw settingsError("asset-too-large", "Image exceeds Firestore limit");
+    if (value.length > MAX_ASSET_CHARACTERS) {
+      throw settingsError("asset-too-large", "Image exceeds Firestore limit");
+    }
+
     const version = String(Date.now());
     await withTimeout(setDoc(assetDocument, {
       data: value,
       version,
       updatedAt: serverTimestamp(),
     }), 15_000, "deadline-exceeded");
+
     persisted[field] = "";
     if (field === "faviconData") {
       published.faviconVersion = version;
@@ -67,10 +106,14 @@ async function saveEditableImages(settings: SiteSettings) {
 async function checkFirestoreReady() {
   let response: Response;
   try {
-    response = await fetch(FIRESTORE_ENDPOINT, { cache: "no-store", signal: AbortSignal.timeout(8_000) });
+    response = await fetch(FIRESTORE_ENDPOINT, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(8_000),
+    });
   } catch {
     throw settingsError("unavailable", "Firestore unavailable");
   }
+
   const payload = await response.text();
   if (response.status === 404 && /database .+ does not exist/i.test(payload)) {
     throw settingsError("failed-precondition", "Firestore database does not exist");
@@ -80,39 +123,43 @@ async function checkFirestoreReady() {
 }
 
 export async function loadPublishedSiteSettings() {
-  const [response, assetsResponse] = await Promise.all([
-    fetch(FIRESTORE_ENDPOINT, { cache: "no-store", signal: AbortSignal.timeout(8_000) }),
-    fetch(ASSETS_ENDPOINT, { cache: "no-store", signal: AbortSignal.timeout(8_000) }),
-  ]);
+  let response: Response;
+  try {
+    response = await fetch(FIRESTORE_ENDPOINT, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch {
+    throw settingsError("unavailable", "Firestore read failed");
+  }
+
   const responseText = await response.text();
   if (response.status === 404 && /database .+ does not exist/i.test(responseText)) {
     throw settingsError("failed-precondition", "Firestore database does not exist");
   }
-  const assetsText = await assetsResponse.text();
-  if (response.status === 404 && assetsResponse.status === 404) return null;
-  if (!response.ok && response.status !== 404) {
+  if (response.status === 404) return null;
+  if (!response.ok) {
     throw settingsError(response.status === 403 ? "permission-denied" : "unavailable", "Firestore read failed");
   }
-  const payload = response.ok
-    ? JSON.parse(responseText) as { fields?: Record<string, { stringValue?: string; booleanValue?: boolean }> }
-    : { fields: {} };
+
+  const payload = JSON.parse(responseText) as RestDocument;
   const values: Record<string, string | boolean> = {};
+
   Object.entries(payload.fields || {}).forEach(([key, field]) => {
     if (typeof field.stringValue === "string") values[key] = field.stringValue;
     if (typeof field.booleanValue === "boolean") values[key] = field.booleanValue;
   });
-  if (assetsResponse.ok) {
-    const assetsPayload = JSON.parse(assetsText) as { documents?: Array<{ name?: string; fields?: Record<string, { stringValue?: string }> }> };
-    assetsPayload.documents?.forEach((asset) => {
-      const key = asset.name?.split("/").pop();
-      if (!key || !IMAGE_FIELDS.includes(key as (typeof IMAGE_FIELDS)[number])) return;
-      const data = asset.fields?.data?.stringValue;
-      if (data?.startsWith("data:image/") && data.length <= MAX_ASSET_CHARACTERS) values[key] = data;
-      const version = asset.fields?.version?.stringValue;
-      if (key === "faviconData" && version) values.faviconVersion = version;
-      if (key === "socialImageData" && version) values.socialImageVersion = version;
-    });
-  }
+
+  // Cada imagem é lida separadamente. Assim, uma imagem maior ou uma falha isolada
+  // não impede o restante do site (inclusive a logomarca) de carregar.
+  const assets = await Promise.all(IMAGE_FIELDS.map((field) => readPublishedAsset(field)));
+  assets.forEach((asset) => {
+    if (!asset) return;
+    values[asset.field] = asset.data;
+    if (asset.field === "faviconData" && asset.version) values.faviconVersion = asset.version;
+    if (asset.field === "socialImageData" && asset.version) values.socialImageVersion = asset.version;
+  });
+
   return mergeSiteSettings(values as Partial<SiteSettings>);
 }
 
